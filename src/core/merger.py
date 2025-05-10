@@ -50,10 +50,9 @@ def _prepare_path_for_script(path, is_source=False):
     Returns:
         str: The normalized path
     """
-    if is_source:
-        return normalize_path_for_script(path, ensure_prefix="src")
-    else:
-        return normalize_path_for_script(path)
+
+    # Source paths should be relative to workspace root
+    return normalize_path_for_script(path)
 
 
 def generate_merge_script(db_path="c64_games.db", output_path="merge_collection.sh", target_dir="target"):

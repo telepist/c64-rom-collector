@@ -9,7 +9,6 @@ This project provides a set of tools to:
 1. **Import and normalize** game information from various ROM collections
 2. **Identify the best version** of each game based on format priority
 3. **Create a consolidated "Best Collection"** with only the highest quality version of each game
-4. **Verify the collection** for completeness and consistency
 
 The system handles the complexities of C64 game naming conventions, multi-part games, and different ROM formats to build a clean, well-organized collection of Commodore 64 games.
 
@@ -17,7 +16,21 @@ The system handles the complexities of C64 game naming conventions, multi-part g
 
 The package provides a unified command-line interface with the following commands:
 
-### 1. `import` Command
+### 1. `run` Command
+
+Executes the complete ROM collection management process by running the import, generate, and merge commands in sequence.
+
+```bash
+./c64_manager.sh run
+```
+
+**Features:**
+- Imports and processes ROM collections
+- Generates the merge plan for best versions
+- Creates the consolidated collection in one step
+- Provides a convenient all-in-one solution
+
+### 2. `import` Command
 
 Processes Commodore 64 game files from source directories and imports them into a SQLite database with normalized metadata.
 
@@ -35,35 +48,33 @@ Processes Commodore 64 game files from source directories and imports them into 
 - Creates database indexes for faster queries
 - Provides detailed import statistics
 
-### 2. `verify` Command
-
-Verifies that all expected games are present in the "target" directory.
-
-```bash
-./c64_manager.sh verify
-```
-
-**Features:**
-- Checks for missing single-part games
-- Checks for missing multi-part games
-- Reports detailed statistics about the collection
-- Analyzes discrepancies between expected and actual files
-
 ### 3. `generate` Command
 
-Creates a shell script to copy the best version of each game to the "target" directory.
+Analyzes the imported ROM collection and creates a merge plan that identifies the best version of each game.
 
 ```bash
 ./c64_manager.sh generate
 ```
 
-### 4. `merge_collection.sh`
+### 4. `merge` Command
 
-The generated shell script that performs the actual file copying operation.
+Creates the consolidated collection by copying the best version of each game to the target directory, following format priorities and organization rules.
 
-### 5. `check_counts.py` and `compare_counts.py`
+```bash
+./c64_manager.sh merge
+```
 
-Additional verification tools to ensure collection integrity.
+**Features:**
+- Copies each game's best version based on format priorities
+- Properly organizes multi-part games into subdirectories
+- Maintains consistent naming across the collection
+- Cleans target directory before merge to prevent conflicts
+- Handles platform-specific path issues automatically
+- Uses an internal file copying script for reliable execution
+
+### 5. `count` Command
+
+Additional tool to verify ROM counts and collection statistics.
 
 ## Data Organization
 
@@ -149,7 +160,6 @@ The project uses the following directory structure:
 - `tests/` - Comprehensive test suite mirroring the main package structure
 - `c64_games.db` - SQLite database containing normalized game metadata
 - `c64_manager.sh` - Main shell script for running the manager
-- `merge_collection.sh` - Generated script to copy games to the target directory
 
 ## Usage Instructions
 
@@ -166,7 +176,7 @@ The project uses the following directory structure:
 
    This command will:
    1. Import and process your ROM collections
-   2. Generate the merge script
+   2. Analyze and plan the collection merge
    3. Create your consolidated collection in the `target` directory
 
 ### 2. Step-by-Step Process
@@ -191,39 +201,37 @@ If you prefer more control or need to troubleshoot, you can run each step separa
 
 #### b. Generate and Run Collection Merge
 
-1. Generate the merge script (creates instructions for consolidating your collection):
+1. Generate the merge plan to identify the best versions:
    ```bash
    ./c64_manager.sh generate
    ```
 
-2. Execute the merge to create your consolidated collection in the "target" directory:
+2. Run the merge command to create your consolidated collection:
    ```bash
    ./c64_manager.sh merge
    ```
 
-### 3. Verify the Collection
+### 3. Additional Commands
 
-Run the verification script to ensure all expected games are in the collection:
+You can use other commands:
 ```bash
-./c64_manager.sh verify
-```
-
-You can also use other commands:
-```bash
-./c64_manager.sh count    # Run the check_counts.py script
-./c64_manager.sh compare  # Run the compare_counts.py script
+./c64_manager.sh count    # Check ROM counts and collection statistics
+./c64_manager.sh version  # Show version information
 ./c64_manager.sh help     # Show all available commands
 ```
 
-## Notes on Collection Inconsistencies
+## Notes on Collection Organization
 
-The verification process may show discrepancies between expected and actual file counts due to:
+The collection management system handles:
 
-1. Inconsistent naming of multi-part games (some with `(Disk X)` pattern, some without)
-2. Different formats of the same game present in the collection
-3. Database counting issues related to multi-part game handling
+1. Consistent naming of multi-part games using standardized patterns 
+2. Different formats of the same game across collections
+3. Database tracking of all ROM files and their relationships
 
-The `check_missing.py` script includes detailed analysis functions to identify and explain these discrepancies.
+The system ensures that games are properly organized by:
+- Using standard patterns for multi-part game naming
+- Maintaining format consistency within game sets
+- Tracking all versions and relationships in the database
 
 ## Requirements
 
