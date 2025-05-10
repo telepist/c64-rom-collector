@@ -2,10 +2,10 @@
 Module for generating merge script.
 """
 import os
-from ..db.database import DatabaseManager
-from ..db.game_repository import GameRepository
-from ..files import clean_directory, ensure_directory_exists, normalize_path_for_script
-from ..utils.path_sanitizer import sanitize_directory_name, sanitize_full_path
+from src.db.database import DatabaseManager
+from src.db.game_repository import GameRepository
+from src.files import clean_directory, ensure_directory_exists, normalize_path_for_script
+from src.utils.path_sanitizer import sanitize_directory_name, sanitize_full_path
 
 
 def clean_target_directory(target_dir="target"):
@@ -80,6 +80,7 @@ def generate_merge_script(db_path="c64_games.db", output_path="merge_collection.
     repository = GameRepository(db)
     
     file_count = 0
+    m3u_files = {}
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write('#!/bin/bash\n\n')
@@ -107,15 +108,33 @@ def generate_merge_script(db_path="c64_games.db", output_path="merge_collection.
                     # Add a comment for the start of a multi-part game
                     f.write(f'\n# Multi-part game: {clean_name}\n')
                     current_game = clean_name
-                # Create sanitized multi-part filename
-                part_filename = f"{sanitized_name} (Part {part_number})"
+                # Create sanitized multi-part filename with disk label
+                part_label = f"Disk {part_number}"
+                part_filename = f"{sanitized_name} ({part_label})"
+                rel_path = f"{sanitized_name}/{sanitize_directory_name(part_filename)}.{format_ext}".replace('\\', '/')
                 target_file = os.path.join(sanitized_name, f"{sanitize_directory_name(part_filename)}.{format_ext}")
+
+                # Add to m3u playlist with label
+                if clean_name not in m3u_files:
+                    m3u_files[clean_name] = []
+                m3u_files[clean_name].append((rel_path, f"Disk {part_number}"))
             else:
                 # Single file game
                 target_file = f"{sanitized_name}.{format_ext}"
             
             target_path = normalize_path_for_script(os.path.join(target_dir, target_file))
             _write_copy_command(f, source_path, target_path, target_file)
+        
+        # Write .m3u files for multi-disk games
+        for game_name, disk_files in m3u_files.items():
+            # Create m3u file in target dir
+            f.write(f'\n# Create {game_name} playlist\n')
+            m3u_path = os.path.join(target_dir, f"{sanitize_directory_name(game_name)}.m3u")
+            f.write(f'cat > "{normalize_path_for_script(m3u_path)}" << EOL\n')
+            # Write disk paths with labels
+            for rel_path, label in disk_files:
+                f.write(f'{rel_path}|{label}\n')
+            f.write('EOL\n')
     
     repository.db_manager.close()
     print(f"Generated {output_path}")
