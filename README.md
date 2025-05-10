@@ -149,9 +149,9 @@ The project uses the following directory structure:
 
 - `src/` - Contains source ROM collections (No-Intro, OneLoad64-Games-Collection-v3, etc.)
 - `target/` - Contains the consolidated best version of each game
-- `*.py` - Python scripts for managing and verifying the collection
+- `scripts/` - Directory containing Python scripts for managing and verifying the collection
 - `c64_games.db` - SQLite database containing normalized game metadata
-
+- `c64_manager.sh` - Main shell script for running the manager
 - `merge_collection.sh` - Generated script to copy games to the target directory
 
 ## Usage Instructions
@@ -162,7 +162,7 @@ The project uses the following directory structure:
 
 2. Run the import script to scan files and create the database:
    ```bash
-   python import_games.py
+   ./c64_manager.sh import
    ```
    
    The script will:
@@ -176,19 +176,26 @@ The project uses the following directory structure:
 
 1. Generate the merge script:
    ```bash
-   python generate_merge_script.py
+   ./c64_manager.sh generate
    ```
 
 2. Run the merge script to create your "target" directory:
    ```bash
-   ./merge_collection.sh
+   ./c64_manager.sh merge
    ```
 
 ### 3. Verify the Collection
 
 Run the verification script to ensure all expected games are in the collection:
 ```bash
-python check_missing.py
+./c64_manager.sh verify
+```
+
+You can also use other commands:
+```bash
+./c64_manager.sh count    # Run the check_counts.py script
+./c64_manager.sh compare  # Run the compare_counts.py script
+./c64_manager.sh help     # Show all available commands
 ```
 
 ## Notes on Collection Inconsistencies
@@ -216,10 +223,10 @@ This project is for personal use only.
 This section provides guidance for AI assistants analyzing this project.
 
 ### Core Workflow
-1. Source ROMs → `import_games.py` → Database
-2. Database → `generate_merge_script.py` → Shell script
-3. Shell script → Executes → Target collection
-4. Target collection → `check_missing.py` → Verification reports
+1. Source ROMs → `./c64_manager.sh import` → Database
+2. Database → `./c64_manager.sh generate` → Shell script
+3. Shell script → `./c64_manager.sh merge` → Target collection
+4. Target collection → `./c64_manager.sh verify` → Verification reports
 
 ### Key Concepts
 - **Name normalization**: Removing region markers, version information

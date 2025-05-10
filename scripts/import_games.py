@@ -121,26 +121,68 @@ def process_file(file_path, collection_name):
         'part_number': part_num
     }
 
-def import_games():
-    print("Starting import from filesystem...")
-    conn = sqlite3.connect('c64_games.db')
+def create_database_schema(conn):
+    """Create the new normalized database schema"""
     c = conn.cursor()
     
-    # Create tables if they don't exist
+    # Create games table (master list of games)
     c.execute('''CREATE TABLE IF NOT EXISTS games (
         id INTEGER PRIMARY KEY,
+        clean_name TEXT NOT NULL UNIQUE,
+        is_multi_part INTEGER NOT NULL DEFAULT 0,
+        best_format TEXT,
+        best_format_priority INTEGER DEFAULT 0
+    )''')
+    
+    # Create game_files table (individual ROM files)
+    c.execute('''CREATE TABLE IF NOT EXISTS game_files (
+        id INTEGER PRIMARY KEY,
+        game_id INTEGER NOT NULL,
         source_path TEXT NOT NULL,
         original_name TEXT NOT NULL,
-        clean_name TEXT NOT NULL,
         format TEXT NOT NULL,
         collection TEXT NOT NULL,
         format_priority INTEGER NOT NULL DEFAULT 0,
-        is_multi_part INTEGER NOT NULL DEFAULT 0,
-        part_number INTEGER NOT NULL DEFAULT 0
+        FOREIGN KEY (game_id) REFERENCES games(id)
     )''')
     
-    # Clear existing data
-    c.execute('DELETE FROM games')
+    # Create game_parts table (parts of multi-part games)
+    c.execute('''CREATE TABLE IF NOT EXISTS game_parts (
+        id INTEGER PRIMARY KEY,
+        game_id INTEGER NOT NULL,
+        file_id INTEGER NOT NULL,
+        part_number INTEGER NOT NULL,
+        FOREIGN KEY (game_id) REFERENCES games(id),
+        FOREIGN KEY (file_id) REFERENCES game_files(id)
+    )''')
+    
+    # Create indexes
+    c.execute('CREATE INDEX IF NOT EXISTS idx_games_clean_name ON games (clean_name)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_game_files_game_id ON game_files (game_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_game_files_format ON game_files (format)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_game_files_collection ON game_files (collection)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_game_parts_game_id ON game_parts (game_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_game_parts_file_id ON game_parts (file_id)')
+    
+    conn.commit()
+
+def import_games():
+    print("Starting import from filesystem...")
+    
+    # Connect to the database (or create it if it doesn't exist)
+    conn = sqlite3.connect('c64_games.db')
+    c = conn.cursor()
+    
+    # Drop existing tables if they exist to clear all data
+    print("Clearing existing database tables...")
+    c.execute('DROP TABLE IF EXISTS game_parts')
+    c.execute('DROP TABLE IF EXISTS game_files')
+    c.execute('DROP TABLE IF EXISTS games')
+    
+    # Create new schema
+    create_database_schema(conn)
+    
+    game_data_list = []  # List to store all processed game data
     
     # Get all collections (top-level directories in src/)
     collections_path = "src"
@@ -160,7 +202,6 @@ def import_games():
     for collection in collections:
         print(f"Processing collection: {collection}")
         collection_path = os.path.join(collections_path, collection)
-        batch_data = []
         
         # Walk through all files in the collection
         for root, dirs, files in os.walk(collection_path):
@@ -178,52 +219,118 @@ def import_games():
                 try:
                     game_data = process_file(file_path, collection)
                     if game_data:
-                        batch_data.append((
-                            game_data['source_path'],
-                            game_data['original_name'],
-                            game_data['clean_name'],
-                            game_data['format'],
-                            game_data['collection'],
-                            game_data['format_priority'],
-                            game_data['is_multi_part'],
-                            game_data['part_number']
-                        ))
+                        game_data_list.append(game_data)
                         processed_files += 1
                     else:
                         skipped_files += 1
                 except Exception as e:
                     print(f"Error processing {file_path}: {str(e)}")
                     error_files += 1
-            
-            # Batch insert every 1000 files for efficiency
-            if len(batch_data) >= 1000:
-                c.executemany('''
-                    INSERT INTO games 
-                    (source_path, original_name, clean_name, format, 
-                     collection, format_priority, is_multi_part, part_number)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', batch_data)
-                conn.commit()
-                batch_data = []
+    
+    print(f"\nProcessed {processed_files} files, now importing to database...")
+    
+    # First, collect unique game names and determine which are multi-part
+    unique_games = {}
+    for game in game_data_list:
+        clean_name = game['clean_name']
+        if clean_name not in unique_games:
+            unique_games[clean_name] = game['is_multi_part']
+        elif game['is_multi_part'] == 1:
+            unique_games[clean_name] = 1
+    
+    # Insert the unique games into the games table
+    game_ids = {}  # Map of clean_name to game_id
+    batch_data = []
+    for clean_name, is_multi in unique_games.items():
+        batch_data.append((clean_name, is_multi))
+        if len(batch_data) >= 1000:
+            c.executemany('INSERT INTO games (clean_name, is_multi_part) VALUES (?, ?)', batch_data)
+            conn.commit()
+            batch_data = []
+    
+    if batch_data:
+        c.executemany('INSERT INTO games (clean_name, is_multi_part) VALUES (?, ?)', batch_data)
+        conn.commit()
+    
+    # Get all game IDs from the database
+    c.execute('SELECT id, clean_name FROM games')
+    for game_id, clean_name in c.fetchall():
+        game_ids[clean_name] = game_id
+    
+    # Insert game files and build a list of multi-part games
+    batch_files = []
+    file_ids = {}  # To track file IDs for multi-part games
+    file_counter = 0
+    
+    for game in game_data_list:
+        game_id = game_ids[game['clean_name']]
+        batch_files.append((
+            game_id,
+            game['source_path'],
+            game['original_name'],
+            game['format'],
+            game['collection'],
+            game['format_priority']
+        ))
         
-        # Insert any remaining files in this collection
-        if batch_data:
+        # Track which items are multi-part for later insertion
+        if game['is_multi_part'] == 1:
+            file_counter += 1
+            file_ids[game['source_path']] = (file_counter, game_id, game['part_number'])
+        
+        if len(batch_files) >= 1000:
             c.executemany('''
-                INSERT INTO games 
-                (source_path, original_name, clean_name, format, 
-                 collection, format_priority, is_multi_part, part_number)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', batch_data)
+                INSERT INTO game_files 
+                (game_id, source_path, original_name, format, collection, format_priority)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', batch_files)
+            conn.commit()
+            batch_files = []
     
-    # Final commit
-    conn.commit()
+    if batch_files:
+        c.executemany('''
+            INSERT INTO game_files 
+            (game_id, source_path, original_name, format, collection, format_priority)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', batch_files)
+        conn.commit()
     
-    # Create indexes for better query performance
-    print("\nCreating indexes...")
-    c.execute('CREATE INDEX IF NOT EXISTS idx_clean_name ON games (clean_name)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_format ON games (format)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_collection ON games (collection)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_multi_part ON games (is_multi_part)')
+    # Get the real file IDs from the database
+    if file_ids:
+        # Build a query to get all file IDs at once
+        paths = list(file_ids.keys())
+        placeholders = ','.join(['?' for _ in paths])
+        c.execute(f'SELECT id, source_path FROM game_files WHERE source_path IN ({placeholders})', paths)
+        file_id_map = {row[1]: row[0] for row in c.fetchall()}
+        
+        # Insert multi-part game records
+        batch_parts = []
+        for source_path, (_, game_id, part_number) in file_ids.items():
+            file_id = file_id_map[source_path]
+            batch_parts.append((game_id, file_id, part_number))
+        
+        c.executemany('INSERT INTO game_parts (game_id, file_id, part_number) VALUES (?, ?, ?)', batch_parts)
+        conn.commit()
+    
+    # Update the best format for each game
+    print("Calculating best format for each game...")
+    c.execute('''
+    WITH BestFormats AS (
+        SELECT 
+            game_id,
+            format,
+            format_priority,
+            ROW_NUMBER() OVER (
+                PARTITION BY game_id 
+                ORDER BY format_priority DESC, collection ASC
+            ) as rn
+        FROM game_files
+    )
+    UPDATE games 
+    SET 
+        best_format = (SELECT format FROM BestFormats WHERE BestFormats.game_id = games.id AND rn = 1),
+        best_format_priority = (SELECT format_priority FROM BestFormats WHERE BestFormats.game_id = games.id AND rn = 1)
+    ''')
     conn.commit()
     
     # Print summary
@@ -235,16 +342,21 @@ def import_games():
     
     # Get counts from database for validation
     c.execute('SELECT COUNT(*) FROM games')
-    db_count = c.fetchone()[0]
-    print(f"Database entries:  {db_count}")
+    games_count = c.fetchone()[0]
     
-    c.execute('SELECT COUNT(DISTINCT clean_name) FROM games')
-    unique_games = c.fetchone()[0]
-    print(f"Unique game names: {unique_games}")
+    c.execute('SELECT COUNT(*) FROM game_files')
+    files_count = c.fetchone()[0]
+    
+    c.execute('SELECT COUNT(*) FROM game_parts')
+    parts_count = c.fetchone()[0]
     
     c.execute('SELECT COUNT(*) FROM games WHERE is_multi_part = 1')
-    multi_part_count = c.fetchone()[0]
-    print(f"Multi-part files:  {multi_part_count}")
+    multi_games_count = c.fetchone()[0]
+    
+    print(f"Unique games:      {games_count}")
+    print(f"Total game files:  {files_count}")
+    print(f"Multi-part games:  {multi_games_count}")
+    print(f"Game parts:        {parts_count}")
     
     conn.close()
     print("\nImport complete!")

@@ -15,21 +15,13 @@ def generate_merge_script():
         
         # First, handle single-part games
         c.execute('''
-            WITH RankedGames AS (
-                SELECT *,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY clean_name 
-                        ORDER BY format_priority DESC, 
-                                 collection ASC  -- prefer No-Intro when format is same
-                    ) as rn
-                FROM games
-                WHERE is_multi_part = 0
-                AND format_priority > 0  -- Ensure only valid ROM formats are included
-            )
-            SELECT source_path, clean_name, format
-            FROM RankedGames
-            WHERE rn = 1
-            ORDER BY clean_name;
+            SELECT gf.source_path, g.clean_name, gf.format
+            FROM games g
+            JOIN game_files gf ON g.id = gf.game_id
+            WHERE g.is_multi_part = 0
+            AND gf.format_priority = g.best_format_priority
+            AND gf.format = g.best_format
+            ORDER BY g.clean_name
         ''')
         
         for source_path, clean_name, format_ext in c.fetchall():
@@ -46,37 +38,35 @@ def generate_merge_script():
             
             f.write(f'echo "Copying {target_name}"\n')
             f.write(f'cp "{source_path}" "{target_path}" || echo "Failed to copy {target_name}"\n\n')
-         # Then handle multi-part games
+        
+        # Then handle multi-part games
         c.execute('''
-            WITH RankedGames AS (
-                SELECT g.*,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY clean_name 
-                        ORDER BY format_priority DESC,
-                                 collection ASC  -- prefer No-Intro when format is same
-                    ) as rn
-                FROM games g
-                WHERE is_multi_part = 1
-            )
-            SELECT g.source_path, g.clean_name, g.format, g.part_number
+            SELECT gf.source_path, g.clean_name, gf.format, gp.part_number
             FROM games g
-            JOIN (
-                SELECT clean_name, format, collection
-                FROM RankedGames 
-                WHERE rn = 1
-            ) r ON g.clean_name = r.clean_name 
-                AND g.format = r.format 
-                AND g.collection = r.collection
+            JOIN game_files gf ON g.id = gf.game_id
+            JOIN game_parts gp ON gf.id = gp.file_id
             WHERE g.is_multi_part = 1
-            ORDER BY g.clean_name, g.part_number;
+            AND gf.format_priority = g.best_format_priority
+            AND gf.format = g.best_format
+            ORDER BY g.clean_name, gp.part_number
         ''')
         
+        # For multipart games, create directories and copy files into them
+        current_game = None
         for source_path, clean_name, format_ext, part_num in c.fetchall():
+            # Create game directory if this is a new game
+            if clean_name != current_game:
+                current_game = clean_name
+                game_dir = os.path.join(MERGED_DIR, clean_name)
+                game_dir = game_dir.replace('\\', '/')
+                f.write(f'echo "Creating directory for {clean_name}"\n')
+                f.write(f'mkdir -p "{game_dir}"\n\n')
+            
             if part_num > 0:
                 target_name = f"{clean_name} (Disk {part_num}).{format_ext}"
             else:
                 target_name = f"{clean_name}.{format_ext}"
-            target_path = os.path.join(MERGED_DIR, target_name)
+            target_path = os.path.join(MERGED_DIR, clean_name, target_name)
             
             # Ensure source path includes src/ prefix
             if not source_path.startswith("src/") and not source_path.startswith("src\\"):

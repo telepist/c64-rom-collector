@@ -8,52 +8,32 @@ def check_missing_files():
     
     # Get expected files from single part games
     c.execute('''
-        WITH RankedGames AS (
-            SELECT *,
-                ROW_NUMBER() OVER (
-                    PARTITION BY clean_name 
-                    ORDER BY format_priority DESC, 
-                             collection ASC
-                ) as rn
-            FROM games
-            WHERE is_multi_part = 0
-        )
-        SELECT clean_name, format, collection, source_path
-        FROM RankedGames 
-        WHERE rn = 1
-        ORDER BY clean_name
+        SELECT g.clean_name, g.best_format, gf.source_path
+        FROM games g
+        JOIN game_files gf ON g.id = gf.game_id
+        WHERE g.is_multi_part = 0
+        AND gf.format_priority = g.best_format_priority
+        AND gf.format = g.best_format
+        ORDER BY g.clean_name
     ''')
     single_files = c.fetchall()
     
     # Get expected files from multi part games
     c.execute('''
-        WITH RankedGames AS (
-            SELECT g.*,
-                ROW_NUMBER() OVER (
-                    PARTITION BY clean_name 
-                    ORDER BY format_priority DESC,
-                             collection ASC
-                ) as rn
-            FROM games g
-            WHERE is_multi_part = 1
-        )
-        SELECT g.clean_name, g.format, g.collection, g.source_path, g.part_number
+        SELECT g.clean_name, g.best_format, gf.source_path, gp.part_number
         FROM games g
-        JOIN (
-            SELECT clean_name, format, collection
-            FROM RankedGames 
-            WHERE rn = 1
-        ) r ON g.clean_name = r.clean_name 
-            AND g.format = r.format 
-            AND g.collection = r.collection
+        JOIN game_files gf ON g.id = gf.game_id
+        JOIN game_parts gp ON gf.id = gp.file_id
         WHERE g.is_multi_part = 1
-        ORDER BY g.clean_name, g.part_number
+        AND gf.format_priority = g.best_format_priority
+        AND gf.format = g.best_format
+        ORDER BY g.clean_name, gp.part_number
     ''')
     multi_files = c.fetchall()
-      # Check single part games
+    # Check single part games
     print("\nChecking single part games...")
     missing_singles = []
-    for clean_name, format_ext, collection, source_path in single_files:
+    for clean_name, format_ext, source_path in single_files:
         expected_name = f"{clean_name}.{format_ext}"
         if not os.path.exists(os.path.join("target", expected_name)):
             missing_singles.append({"name": expected_name, "source": source_path})
@@ -61,12 +41,22 @@ def check_missing_files():
     # Check multi part games
     print("\nChecking multi part games...")
     missing_multis = []
-    for clean_name, format_ext, collection, source_path, part_num in multi_files:
+    for clean_name, format_ext, source_path, part_num in multi_files:
+        # Check if directory exists for multi-part games
+        game_dir = os.path.join("target", clean_name)
+        if not os.path.exists(game_dir) or not os.path.isdir(game_dir):
+            # If directory doesn't exist, report the entire game as missing
+            if not any(m["name"].startswith(clean_name) for m in missing_multis):
+                missing_multis.append({"name": f"{clean_name} (directory)", "source": source_path})
+            continue
+        
         if part_num > 0:
             expected_name = f"{clean_name} (Disk {part_num}).{format_ext}"
         else:
             expected_name = f"{clean_name}.{format_ext}"
-        if not os.path.exists(os.path.join("target", expected_name)):
+        
+        # Check within the game directory for the part
+        if not os.path.exists(os.path.join(game_dir, expected_name)):
             missing_multis.append({"name": expected_name, "source": source_path})
     
     print(f"\nFound {len(missing_singles)} missing single part games:")
@@ -89,58 +79,47 @@ def check_game_counts():
     c = conn.cursor()
 
     # Count expected single part games
-    c.execute('''
-        WITH RankedGames AS (
-            SELECT *,
-                ROW_NUMBER() OVER (
-                    PARTITION BY clean_name 
-                    ORDER BY format_priority DESC, 
-                             collection ASC
-                ) as rn
-            FROM games
-            WHERE is_multi_part = 0
-        )
-        SELECT COUNT(*)
-        FROM RankedGames 
-        WHERE rn = 1
-    ''')
+    c.execute('SELECT COUNT(*) FROM games WHERE is_multi_part = 0')
     single_count = c.fetchone()[0]
 
     # Count expected multi part games
-    c.execute('''
-        WITH RankedGames AS (
-            SELECT g.*,
-                ROW_NUMBER() OVER (
-                    PARTITION BY clean_name 
-                    ORDER BY format_priority DESC,
-                             collection ASC
-                ) as rn
-            FROM games g
-            WHERE is_multi_part = 1
-        )
-        SELECT COUNT(*)
-        FROM games g
-        JOIN (
-            SELECT clean_name, format, collection
-            FROM RankedGames 
-            WHERE rn = 1
-        ) r ON g.clean_name = r.clean_name 
-            AND g.format = r.format 
-            AND g.collection = r.collection
-        WHERE g.is_multi_part = 1
-    ''')
+    c.execute('SELECT COUNT(*) FROM games WHERE is_multi_part = 1')
     multi_count = c.fetchone()[0]
+    
+    # Count multi-part game files
+    c.execute('''
+        SELECT COUNT(*)
+        FROM game_parts gp
+        JOIN game_files gf ON gp.file_id = gf.id
+        JOIN games g ON gp.game_id = g.id
+        WHERE g.is_multi_part = 1
+        AND gf.format_priority = g.best_format_priority
+        AND gf.format = g.best_format
+    ''')
+    multi_parts_count = c.fetchone()[0]
 
-    total_expected = single_count + multi_count    # Count actual files in the "target" directory
-    actual_files = len([f for f in os.listdir("target") if os.path.isfile(os.path.join("target", f))])
-
-    print(f"\nExpected total games: {total_expected}")
-    print(f"Actual files in collection: {actual_files}")
-
-    if total_expected == actual_files:
-        print("\nThe collection is complete!")
+    # Total expected games
+    total_expected = single_count + multi_count
+    
+    # Count actual files and directories in the "target" directory
+    if os.path.exists("target"):
+        actual_files = len([f for f in os.listdir("target") if os.path.isfile(os.path.join("target", f))])
+        actual_dirs = len([d for d in os.listdir("target") if os.path.isdir(os.path.join("target", d))])
     else:
-        print("\nThe collection is incomplete. Some files are missing or extra files are present.")
+        actual_files = 0
+        actual_dirs = 0
+
+    print(f"\nExpected single-part games: {single_count}")
+    print(f"Expected multi-part games: {multi_count} (with {multi_parts_count} total parts)")
+    print(f"Expected total unique games: {total_expected}")
+    print(f"Actual files in collection: {actual_files}")
+    print(f"Actual directories (for multi-part games): {actual_dirs}")
+
+    # Check if all multi-part games are in directories
+    if actual_dirs == multi_count:
+        print("\nAll multi-part games are properly organized into directories!")
+    else:
+        print(f"\nWarning: Expected {multi_count} multi-part game directories, but found {actual_dirs}.")
 
     conn.close()
 
@@ -719,9 +698,17 @@ def verify_collection():
     
     conn.close()
 
-if __name__ == '__main__':
+def check_missing():
+    """Main entry point - check for missing games and provide counts"""
+    target_dir = "target"
+    if not os.path.exists(target_dir):
+        print(f"Error: Target directory '{target_dir}' doesn't exist!")
+        return
+    
+    print("Checking for missing games in the target collection...")
+    
     check_missing_files()
     check_game_counts()
-    analyze_discrepancy()
-    analyze_inconsistent_multi()
-    verify_collection()
+
+if __name__ == '__main__':
+    check_missing()
