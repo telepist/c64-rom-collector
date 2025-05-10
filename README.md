@@ -15,9 +15,15 @@ The system handles the complexities of C64 game naming conventions, multi-part g
 
 ## Tools Included
 
-### 1. `import_games.py`
+The package provides a unified command-line interface with the following commands:
+
+### 1. `import` Command
 
 Processes Commodore 64 game files from source directories and imports them into a SQLite database with normalized metadata.
+
+```bash
+python c64_manager.py import --src path/to/source --db database.db
+```
 
 **Features:**
 - Recursively scans the `src/` directory for ROM files
@@ -29,9 +35,13 @@ Processes Commodore 64 game files from source directories and imports them into 
 - Creates database indexes for faster queries
 - Provides detailed import statistics
 
-### 2. `check_missing.py`
+### 2. `verify` Command
 
 Verifies that all expected games are present in the "target" directory.
+
+```bash
+python c64_manager.py verify --db database.db --target path/to/target
+```
 
 **Features:**
 - Checks for missing single-part games
@@ -39,9 +49,13 @@ Verifies that all expected games are present in the "target" directory.
 - Reports detailed statistics about the collection
 - Analyzes discrepancies between expected and actual files
 
-### 3. `generate_merge_script.py`
+### 3. `generate` Command
 
 Creates a shell script to copy the best version of each game to the "target" directory.
+
+```bash
+python c64_manager.py generate --db database.db --output merge_script.sh --target path/to/target
+```
 
 ### 4. `merge_collection.sh`
 
