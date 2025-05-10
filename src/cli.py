@@ -12,13 +12,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from src.core.importer import import_games
 from src.core.merger import generate_merge_script, clean_target_directory
-from src.core.verifier import check_missing_files
 
 
 def main():
     parser = argparse.ArgumentParser(description="C64 ROM Collection Manager")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
-      # Import command
+    
+    # Import command
     import_parser = subparsers.add_parser("import", help="Import games from ROM directories")
     import_parser.add_argument("--src", default="roms", help="ROMs directory")
     import_parser.add_argument("--db", default="c64_games.db", help="Database path")
@@ -28,11 +28,6 @@ def main():
     generate_parser.add_argument("--db", default="c64_games.db", help="Database path")
     generate_parser.add_argument("--output", default="merge_collection.sh", help="Output script path")
     generate_parser.add_argument("--target", default="target", help="Target directory")
-    
-    # Verify command
-    verify_parser = subparsers.add_parser("verify", help="Verify the collection")
-    verify_parser.add_argument("--db", default="c64_games.db", help="Database path")
-    verify_parser.add_argument("--target", default="target", help="Target directory")
     
     # Merge command
     merge_parser = subparsers.add_parser("merge", help="Merge the collection to target directory")
@@ -61,38 +56,13 @@ def main():
         print(f"Unique games:    {stats['unique_games']}")
         print(f"Multi-part games: {stats.get('multi_games', 0)}")
         print(f"Execution time:  {end_time - start_time:.2f} seconds")
-        
+    
     elif args.command == "generate":
         start_time = time.time()
         file_count = generate_merge_script(args.db, args.output, args.target)
         end_time = time.time()
-        
         print(f"Generated script for {file_count} files.")
         print(f"Execution time: {end_time - start_time:.2f} seconds")
-        
-    elif args.command == "verify":
-        start_time = time.time()
-        results = check_missing_files(args.db, args.target)
-        end_time = time.time()
-        
-        print("\nVerification Results:")
-        print(f"Expected files:  {results['total_expected']}")
-        print(f"Actual files:    {results['total_actual']}")
-        print(f"Missing files:   {results['total_missing']}")
-        
-        if results['missing_singles']:
-            print(f"\nMissing single part games: {len(results['missing_singles'])}")
-            for i, game in enumerate(results['missing_singles'][:5], 1):  # Show first 5 only
-                print(f"{i}. Missing: {game['name']}")
-                print(f"   Source: {game['source']}")
-        
-        if results['missing_multis']:
-            print(f"\nMissing multi part games: {len(results['missing_multis'])}")
-            for i, game in enumerate(results['missing_multis'][:5], 1):  # Show first 5 only
-                print(f"{i}. Missing: {game['name']}")
-                print(f"   Source: {game['source']}")
-                
-        print(f"\nExecution time: {end_time - start_time:.2f} seconds")
     
     elif args.command == "merge":
         start_time = time.time()
@@ -144,7 +114,7 @@ def main():
         
         test_args = TestArgs(args.module, args.xml)
         sys.exit(run_tests(test_args))
-        
+    
     else:
         parser.print_help()
 

@@ -15,9 +15,7 @@ show_help() {
     echo "  generate   - Generate the merge script for creating the target collection"
     echo "  merge      - Run the merge script to copy best versions to target directory"
     echo "  run        - Execute import, generate, and merge commands in sequence"
-    echo "  verify     - Verify the collection for completeness and consistency"
     echo "  count      - Run the check_counts.py script for additional verification"
-    echo "  compare    - Run the compare_counts.py script to compare collections"
     echo "  version    - Show version information"
     echo "  test       - Run unit tests"
     echo "  help       - Display this help message"
@@ -56,17 +54,9 @@ case "$1" in
         python -m src.cli merge
         echo "Complete workflow finished successfully!"
         ;;
-    verify)
-        echo "Verifying collection for completeness..."
-        python -m src.cli verify
-        ;;
     count)
         echo "Running count check..."
         python -m src.cli count
-        ;;
-    compare)
-        echo "Running collection comparison..."
-        python -m src.cli compare
         ;;
     version)
         echo "Showing version information..."
