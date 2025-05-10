@@ -3,7 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name="c64collector",
     version="1.0.0",
-    packages=find_packages(),
+    package_dir={"c64collector": "src"},
+    packages=["c64collector"],
     description="Commodore 64 ROM Collection Manager",
     author="Original Author",
     python_requires=">=3.6",
@@ -17,8 +18,7 @@ setup(
             "unittest-xml-reporting>=3.2.0",
             "coverage>=7.0.0",
         ]
-    },
-    entry_points={
+    },    entry_points={
         "console_scripts": [
             "c64collector=c64collector.cli:main",
         ],

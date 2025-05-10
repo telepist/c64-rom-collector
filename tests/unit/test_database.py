@@ -5,8 +5,8 @@ import unittest
 import sqlite3
 import os
 import tempfile
-from c64collector.db.database import DatabaseManager
-from c64collector.db.game_repository import GameRepository
+from src.db.database import DatabaseManager
+from src.db.game_repository import GameRepository
 
 
 class TestDatabaseManager(unittest.TestCase):

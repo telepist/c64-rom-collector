@@ -70,7 +70,7 @@ Tests are located in the `tests/unit` directory. Each test file should:
 
 ```python
 import unittest
-from c64collector.utils.name_cleaner import clean_name
+from src.utils.name_cleaner import clean_name
 
 class TestNameCleaner(unittest.TestCase):
     

@@ -58,26 +58,26 @@ case "$1" in
         ;;
     verify)
         echo "Verifying collection for completeness..."
-        python -m c64collector.cli verify
+        python -m src.cli verify
         ;;
     count)
         echo "Running count check..."
-        python -m c64collector.cli count
+        python -m src.cli count
         ;;
     compare)
         echo "Running collection comparison..."
-        python -m c64collector.cli compare
+        python -m src.cli compare
         ;;
     version)
         echo "Showing version information..."
-        python -m c64collector.cli version
+        python -m src.cli version
         ;;
     test)
         echo "Running unit tests..."
         if [ -n "$2" ]; then
-            python -m c64collector.cli test --module "$2"
+            python -m src.cli test --module "$2"
         else
-            python -m c64collector.cli test
+            python -m src.cli test
         fi
         ;;
     help)
