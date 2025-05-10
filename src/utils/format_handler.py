@@ -13,13 +13,18 @@ def get_format_priority(filename):
         
     Returns:
         int: The priority level (higher is better)
+          4: Cartridge (.crt) - Most reliable, original hardware format
+          3: Disk images (.d64, .g64, .nib) - Complete disk images with protection
+          2: Program files (.prg) - Raw program data, may miss custom loaders
+          1: Tape images (.tap, .t64) - Lowest priority
     """
     ext = filename.lower().split('.')[-1]
     priorities = {
-        'crt': 3,  # cartridges highest priority
-        'd64': 2,  # disk images second
-        'g64': 2,
-        'nib': 2,
+        'crt': 4,  # cartridges highest priority
+        'd64': 3,  # disk images second (complete with protection)
+        'g64': 3,
+        'nib': 3,
+        'prg': 2,  # program files third (may miss custom loaders)
         'tap': 1,  # tapes lowest priority
         't64': 1
     }

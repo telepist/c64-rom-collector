@@ -32,12 +32,11 @@ def should_skip_file(path: str, filename: str) -> bool:
     # Skip system utilities and non-game content
     if any(pattern in path or pattern in filename for pattern in skip_patterns):
         return True
-    
-    # Skip certain file types
+      # Skip certain file types
     format_ext = os.path.splitext(filename)[1][1:].lower()
     
-    # Valid C64 ROM formats
-    valid_formats = ['crt', 'd64', 'g64', 'nib', 'tap', 't64']
+    # Valid C64 ROM formats 
+    valid_formats = ['crt', 'd64', 'g64', 'nib', 'tap', 't64', 'prg']
     
     # Skip if not a recognized C64 ROM format
     if format_ext not in valid_formats:
