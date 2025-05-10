@@ -33,11 +33,11 @@ fi
 case "$1" in
     import)
         echo "Importing games from source collections (will clear existing database)..."
-        python scripts/import_games.py
+        python -m c64collector.cli import
         ;;
     generate)
         echo "Generating merge script..."
-        python scripts/generate_merge_script.py
+        python -m c64collector.cli generate
         ;;
     merge)
         echo "Running merge script to create target collection..."
@@ -45,15 +45,15 @@ case "$1" in
         ;;
     verify)
         echo "Verifying collection for completeness..."
-        python scripts/check_missing.py
+        python -m c64collector.cli verify
         ;;
     count)
         echo "Running count check..."
-        python scripts/check_counts.py
+        python -m c64collector.cli count
         ;;
     compare)
         echo "Running collection comparison..."
-        python scripts/compare_counts.py
+        python -m c64collector.cli compare
         ;;
     help)
         show_help
