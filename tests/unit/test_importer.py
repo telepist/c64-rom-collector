@@ -67,24 +67,43 @@ class TestImporter(unittest.TestCase):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         
-        # Check games table
+        # Check unique games
         c.execute("SELECT COUNT(*) FROM games")
-        self.assertEqual(c.fetchone()[0], 6)  # 6 total records (3 singles + 2 multi parts + 1 duplicate)
+        self.assertEqual(c.fetchone()[0], 4)  # 4 unique games
+        
+        # Check game versions
+        c.execute("SELECT COUNT(*) FROM game_versions")
+        self.assertEqual(c.fetchone()[0], 5)  # 5 versions (Game1 has 2 versions)
+        
+        # Check game parts
+        c.execute("SELECT COUNT(*) FROM game_parts")
+        self.assertEqual(c.fetchone()[0], 6)  # 6 total files
         
         # Check clean names
-        c.execute("SELECT DISTINCT clean_name FROM games")
+        c.execute("SELECT clean_name FROM games ORDER BY clean_name")
         clean_names = [row[0] for row in c.fetchall()]
-        self.assertEqual(sorted(clean_names), ["Game1", "Game2", "Game3", "Game4"])
+        self.assertEqual(clean_names, ["Game1", "Game2", "Game3", "Game4"])
         
         # Check multi-part game
-        c.execute("SELECT clean_name, part_number FROM games WHERE is_multi_part = 1")
-        multi_parts = c.fetchall()
-        self.assertEqual(len(multi_parts), 2)  # 2 parts of Game3
+        c.execute("""
+            SELECT g.clean_name, COUNT(p.id)
+            FROM games g
+            JOIN game_versions v ON g.id = v.game_id
+            JOIN game_parts p ON v.id = p.version_id
+            WHERE g.clean_name = 'Game3'
+            GROUP BY g.id
+        """)
+        multi_part = c.fetchone()
+        self.assertEqual(multi_part[1], 2)  # Game3 has 2 parts
         
-        # Check formats
-        c.execute("SELECT clean_name, format FROM games WHERE clean_name = 'Game1'")
-        game1_formats = c.fetchall()
-        self.assertEqual(len(game1_formats), 2)  # Game1 appears in both collections
+        # Check Game1 appears in both collections
+        c.execute("""
+            SELECT COUNT(DISTINCT v.collection)
+            FROM games g
+            JOIN game_versions v ON g.id = v.game_id
+            WHERE g.clean_name = 'Game1'
+        """)
+        self.assertEqual(c.fetchone()[0], 2)  # Game1 is in 2 collections
         
         conn.close()
 

@@ -3,6 +3,7 @@ File system operations and filtering functions for the ROM collector.
 """
 import os
 import re
+import shutil
 
 def should_skip_file(path, filename):
     """
@@ -60,3 +61,72 @@ def get_all_collections(base_dir):
         
     return [d for d in os.listdir(base_dir) 
             if os.path.isdir(os.path.join(base_dir, d))]
+
+
+def clean_directory(directory_path):
+    """
+    Remove all files from a directory but keep the directory itself.
+    
+    Args:
+        directory_path (str): Path to the directory to clean
+    
+    Returns:
+        bool: True if cleaning was successful, False otherwise
+    """
+    try:
+        # Check if directory exists
+        if os.path.exists(directory_path):
+            # Remove all content but keep directory
+            for item in os.listdir(directory_path):
+                item_path = os.path.join(directory_path, item)
+                if os.path.isfile(item_path):
+                    os.unlink(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+            return True
+        else:
+            # Create directory if it doesn't exist
+            os.makedirs(directory_path, exist_ok=True)
+            return True
+    except Exception as e:
+        print(f"Error cleaning directory '{directory_path}': {e}")
+        return False
+
+
+def ensure_directory_exists(directory_path):
+    """
+    Ensure a directory exists, creating it if necessary.
+    
+    Args:
+        directory_path (str): Path to the directory
+    
+    Returns:
+        bool: True if directory exists or was created successfully, False otherwise
+    """
+    try:
+        os.makedirs(directory_path, exist_ok=True)
+        return True
+    except Exception as e:
+        print(f"Error creating directory '{directory_path}': {e}")
+        return False
+
+
+def normalize_path_for_script(path, ensure_prefix=None):
+    """
+    Normalize a path for use in a shell script (replace backslashes with forward slashes).
+    
+    Args:
+        path (str): The path to normalize
+        ensure_prefix (str, optional): A prefix to ensure is at the start of the path
+        
+    Returns:
+        str: The normalized path
+    """
+    normalized_path = path.replace('\\', '/')
+    
+    if ensure_prefix and not normalized_path.startswith(ensure_prefix):
+        if not ensure_prefix.endswith('/'):
+            ensure_prefix += '/'
+        normalized_path = ensure_prefix + normalized_path
+    
+    return normalized_path

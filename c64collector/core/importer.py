@@ -31,7 +31,8 @@ def import_games(src_dir="src", db_path="c64_games.db"):
         'processed_files': 0,
         'skipped_files': 0,
         'error_files': 0,
-        'unique_games': 0
+        'unique_games': 0,
+        'multi_games': 0
     }
     
     # Get all collections
@@ -66,12 +67,20 @@ def import_games(src_dir="src", db_path="c64_games.db"):
     if batch_data:
         _insert_batch(db, batch_data)
     
+    # Get stats using the new schema
     # Count unique games
-    db.execute('SELECT COUNT(DISTINCT clean_name) FROM games')
+    db.execute('SELECT COUNT(*) FROM games')
     stats['unique_games'] = db.fetchone()[0]
     
-    # Count multi-part games
-    db.execute('SELECT COUNT(DISTINCT clean_name) FROM games WHERE is_multi_part = 1')
+    # Count multi-part games (games that have versions with multiple parts)
+    db.execute('''
+        SELECT COUNT(DISTINCT g.id) 
+        FROM games g 
+        JOIN game_versions v ON g.id = v.game_id 
+        JOIN game_parts p1 ON v.id = p1.version_id 
+        JOIN game_parts p2 ON v.id = p2.version_id 
+        WHERE p1.part_number < p2.part_number
+    ''')
     stats['multi_games'] = db.fetchone()[0]
     
     db.close()

@@ -5,12 +5,13 @@ import argparse
 import time
 import sys
 import os
+import subprocess
 
 # Add parent directory to path for imports to work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from c64collector.core.importer import import_games
-from c64collector.core.merger import generate_merge_script
+from c64collector.core.merger import generate_merge_script, clean_target_directory
 from c64collector.core.verifier import check_missing_files
 
 
@@ -33,6 +34,11 @@ def main():
     verify_parser = subparsers.add_parser("verify", help="Verify the collection")
     verify_parser.add_argument("--db", default="c64_games.db", help="Database path")
     verify_parser.add_argument("--target", default="target", help="Target directory")
+    
+    # Merge command
+    merge_parser = subparsers.add_parser("merge", help="Merge the collection to target directory")
+    merge_parser.add_argument("--target", default="target", help="Target directory")
+    merge_parser.add_argument("--script", default="merge_collection.sh", help="Merge script to run")
     
     # Version command
     subparsers.add_parser("version", help="Show version information")
@@ -88,6 +94,42 @@ def main():
                 print(f"   Source: {game['source']}")
                 
         print(f"\nExecution time: {end_time - start_time:.2f} seconds")
+    
+    elif args.command == "merge":
+        start_time = time.time()
+        print(f"Running merge script to create target collection...")
+        
+        # Clean target directory
+        print(f"Cleaning target directory '{args.target}' first...")
+        clean_result = clean_target_directory(args.target)
+        
+        if clean_result:
+            # Run the merge script
+            try:
+                script_path = os.path.abspath(args.script)
+                if os.path.exists(script_path):
+                    # Make sure the script is executable
+                    if os.name != 'nt':  # Not needed on Windows
+                        os.chmod(script_path, 0o755)
+                    
+                    print(f"Executing merge script: {script_path}")
+                    
+                    # Handle execution differently based on platform
+                    if os.name == 'nt':  # Windows
+                        result = subprocess.run(['bash', script_path], shell=True, check=True)
+                    else:  # Unix-like
+                        result = subprocess.run([script_path], shell=True, check=True)
+                    
+                    end_time = time.time()
+                    print(f"Merge completed successfully!")
+                    print(f"Execution time: {end_time - start_time:.2f} seconds")
+                else:
+                    print(f"Error: Merge script '{script_path}' not found.")
+                    print(f"Run the 'generate' command first to create the merge script.")
+            except subprocess.CalledProcessError as e:
+                print(f"Error executing merge script: {e}")
+        else:
+            print("Aborting merge due to errors while cleaning target directory.")
     
     elif args.command == "version":
         print("C64 ROM Collection Manager v1.0.0")

@@ -12,11 +12,14 @@ show_help() {
     echo ""
     echo "Available Commands:"
     echo "  import     - Import and normalize game information from source collections"
-    echo "  generate   - Generate the merge script for creating the best collection"
+    echo "  generate   - Generate the merge script for creating the target collection"
     echo "  merge      - Run the merge script to copy best versions to target directory"
+    echo "  run        - Execute import, generate, and merge commands in sequence"
     echo "  verify     - Verify the collection for completeness and consistency"
     echo "  count      - Run the check_counts.py script for additional verification"
     echo "  compare    - Run the compare_counts.py script to compare collections"
+    echo "  version    - Show version information"
+    echo "  test       - Run unit tests"
     echo "  help       - Display this help message"
     echo ""
     echo "Note: Multi-part games are automatically organized into subdirectories."
@@ -41,7 +44,17 @@ case "$1" in
         ;;
     merge)
         echo "Running merge script to create target collection..."
-        ./merge_collection.sh
+        python -m c64collector.cli merge
+        ;;
+    run)
+        echo "Running complete workflow: import, generate, and merge..."
+        echo "Step 1/3: Importing games from source collections..."
+        python -m c64collector.cli import
+        echo "Step 2/3: Generating merge script..."
+        python -m c64collector.cli generate
+        echo "Step 3/3: Running merge script to create target collection..."
+        python -m c64collector.cli merge
+        echo "Complete workflow finished successfully!"
         ;;
     verify)
         echo "Verifying collection for completeness..."
@@ -54,6 +67,18 @@ case "$1" in
     compare)
         echo "Running collection comparison..."
         python -m c64collector.cli compare
+        ;;
+    version)
+        echo "Showing version information..."
+        python -m c64collector.cli version
+        ;;
+    test)
+        echo "Running unit tests..."
+        if [ -n "$2" ]; then
+            python -m c64collector.cli test --module "$2"
+        else
+            python -m c64collector.cli test
+        fi
         ;;
     help)
         show_help

@@ -22,7 +22,7 @@ The package provides a unified command-line interface with the following command
 Processes Commodore 64 game files from source directories and imports them into a SQLite database with normalized metadata.
 
 ```bash
-python c64_manager.py import --src path/to/source --db database.db
+./c64_manager.sh import
 ```
 
 **Features:**
@@ -40,7 +40,7 @@ python c64_manager.py import --src path/to/source --db database.db
 Verifies that all expected games are present in the "target" directory.
 
 ```bash
-python c64_manager.py verify --db database.db --target path/to/target
+./c64_manager.sh verify
 ```
 
 **Features:**
@@ -54,7 +54,7 @@ python c64_manager.py verify --db database.db --target path/to/target
 Creates a shell script to copy the best version of each game to the "target" directory.
 
 ```bash
-python c64_manager.py generate --db database.db --output merge_script.sh --target path/to/target
+./c64_manager.sh generate
 ```
 
 ### 4. `merge_collection.sh`
