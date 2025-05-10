@@ -1,0 +1,20 @@
+# Ignore ROM collections (source files)
+src/
+
+# Ignore the target directory with the consolidated collection
+target/
+
+# Ignore the database file (can be regenerated from source)
+c64_games.db
+
+# Ignore the generated merge script
+merge_collection.sh
+
+# Ignore Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
