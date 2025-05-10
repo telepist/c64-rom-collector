@@ -4,7 +4,7 @@ Core functionality for processing game files.
 import os
 from ..utils.name_cleaner import clean_name
 from ..utils.format_handler import get_format_priority, is_multi_part, get_multi_part_info
-from ..utils.file_ops import should_skip_file
+from ..files import should_skip_file
 
 
 def process_file(file_path, collection_name):

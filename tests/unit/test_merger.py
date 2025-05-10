@@ -36,42 +36,65 @@ class TestMerger(unittest.TestCase):
         # Create schema
         cursor.execute('''CREATE TABLE games (
             id INTEGER PRIMARY KEY,
+            clean_name TEXT NOT NULL
+        )''')
+        cursor.execute('''CREATE TABLE game_versions (
+            id INTEGER PRIMARY KEY,
+            game_id INTEGER NOT NULL,
+            collection TEXT NOT NULL,
+            format TEXT NOT NULL,
+            format_priority INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (game_id) REFERENCES games(id)
+        )''')
+        cursor.execute('''CREATE TABLE game_parts (
+            id INTEGER PRIMARY KEY,
+            version_id INTEGER NOT NULL,
+            part_number INTEGER NOT NULL DEFAULT 0,
             source_path TEXT NOT NULL,
             original_name TEXT NOT NULL,
-            clean_name TEXT NOT NULL,
-            format TEXT NOT NULL,
-            collection TEXT NOT NULL,
-            format_priority INTEGER NOT NULL DEFAULT 0,
-            is_multi_part INTEGER NOT NULL DEFAULT 0,
-            part_number INTEGER NOT NULL DEFAULT 0
+            FOREIGN KEY (version_id) REFERENCES game_versions(id)
         )''')
         
-        # Insert single part games
-        cursor.execute('''INSERT INTO games 
-            (source_path, original_name, clean_name, format, collection, format_priority, is_multi_part, part_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            ("src/Collection1/Game1.crt", "Game1.crt", "Game1", "crt", "Collection1", 3, 0, 0))
-            
-        cursor.execute('''INSERT INTO games 
-            (source_path, original_name, clean_name, format, collection, format_priority, is_multi_part, part_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            ("src/Collection2/Game1 (USA).crt", "Game1 (USA).crt", "Game1", "crt", "Collection2", 3, 0, 0))
-            
-        cursor.execute('''INSERT INTO games 
-            (source_path, original_name, clean_name, format, collection, format_priority, is_multi_part, part_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            ("src/Collection1/Game2 (Europe).d64", "Game2 (Europe).d64", "Game2", "d64", "Collection1", 2, 0, 0))
-            
-        # Insert multi-part game
-        cursor.execute('''INSERT INTO games 
-            (source_path, original_name, clean_name, format, collection, format_priority, is_multi_part, part_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            ("src/Collection1/Game3 (Disk 1).tap", "Game3 (Disk 1).tap", "Game3", "tap", "Collection1", 1, 1, 1))
-            
-        cursor.execute('''INSERT INTO games 
-            (source_path, original_name, clean_name, format, collection, format_priority, is_multi_part, part_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            ("src/Collection1/Game3 (Disk 2).tap", "Game3 (Disk 2).tap", "Game3", "tap", "Collection1", 1, 1, 2))
+        # Insert single part game in Collection1 (highest priority)
+        cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Game1',))
+        game1_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
+                         VALUES (?, ?, ?, ?)''', (game1_id, 'Collection1', 'crt', 3))
+        version1_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version1_id, 0, 'src/Collection1/Game1.crt', 'Game1.crt'))
+        
+        # Insert same game in Collection2 (lower priority)
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
+                         VALUES (?, ?, ?, ?)''', (game1_id, 'Collection2', 'crt', 3))
+        version2_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version2_id, 0, 'src/Collection2/Game1 (USA).crt', 'Game1 (USA).crt'))
+        
+        # Insert single part game 2
+        cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Game2',))
+        game2_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
+                         VALUES (?, ?, ?, ?)''', (game2_id, 'Collection1', 'd64', 2))
+        version3_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version3_id, 0, 'src/Collection1/Game2 (Europe).d64', 'Game2 (Europe).d64'))
+        
+        # Insert multi part game 3
+        cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Game3',))
+        game3_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
+                         VALUES (?, ?, ?, ?)''', (game3_id, 'Collection1', 'tap', 1))
+        version4_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version4_id, 1, 'src/Collection1/Game3 (Disk 1).tap', 'Game3 (Disk 1).tap'))
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version4_id, 2, 'src/Collection1/Game3 (Disk 2).tap', 'Game3 (Disk 2).tap'))
         
         conn.commit()
         conn.close()
@@ -92,8 +115,9 @@ class TestMerger(unittest.TestCase):
         self.assertIn('mkdir -p "test_target"', content)
         self.assertIn('cp "src/Collection1/Game1.crt" "test_target/Game1.crt"', content)
         self.assertIn('cp "src/Collection1/Game2 (Europe).d64" "test_target/Game2.d64"', content)
-        self.assertIn('cp "src/Collection1/Game3 (Disk 1).tap" "test_target/Game3 (Disk 1).tap"', content)
-        self.assertIn('cp "src/Collection1/Game3 (Disk 2).tap" "test_target/Game3 (Disk 2).tap"', content)
+        self.assertIn('mkdir -p "test_target/Game3"', content)
+        self.assertIn('cp "src/Collection1/Game3 (Disk 1).tap" "test_target/Game3/Game3 (Part 1).tap"', content)
+        self.assertIn('cp "src/Collection1/Game3 (Disk 2).tap" "test_target/Game3/Game3 (Part 2).tap"', content)
         
         # Make sure it's not using Collection2's version of Game1
         self.assertNotIn('cp "src/Collection2/Game1 (USA).crt" "test_target/Game1.crt"', content)

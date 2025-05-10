@@ -37,7 +37,7 @@ python c64_manager.py test --module format_handler --xml
 #### Available Test Modules
 
 - `database`: Tests for database operations
-- `file_ops`: Tests for file operations
+- `files`: Tests for file operations
 - `format_handler`: Tests for ROM format handling
 - `importer`: Tests for the import process
 - `merger`: Tests for the merge script generation

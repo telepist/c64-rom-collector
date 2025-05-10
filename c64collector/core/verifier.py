@@ -2,6 +2,7 @@
 Module for verifying the collection.
 """
 import os
+from ..db.game_repository import GameRepository
 from ..db.database import DatabaseManager
 
 
@@ -18,6 +19,7 @@ def check_missing_files(db_path="c64_games.db", target_dir="target"):
     """
     db = DatabaseManager(db_path)
     db.connect()
+    repository = GameRepository(db)
     
     results = {
         'missing_singles': [],
@@ -28,7 +30,7 @@ def check_missing_files(db_path="c64_games.db", target_dir="target"):
     }
     
     # Get expected files from single part games
-    db.execute('''
+    repository.db_manager.execute('''
         WITH RankedGames AS (
             SELECT *,
                 ROW_NUMBER() OVER (
@@ -44,10 +46,10 @@ def check_missing_files(db_path="c64_games.db", target_dir="target"):
         WHERE rn = 1
         ORDER BY clean_name
     ''')
-    single_files = db.fetchall()
+    single_files = repository.db_manager.fetchall()
     
     # Get expected files from multi part games
-    db.execute('''
+    repository.db_manager.execute('''
         WITH RankedGames AS (
             SELECT g.*,
                 ROW_NUMBER() OVER (
@@ -70,7 +72,7 @@ def check_missing_files(db_path="c64_games.db", target_dir="target"):
         WHERE g.is_multi_part = 1
         ORDER BY g.clean_name, g.part_number
     ''')
-    multi_files = db.fetchall()
+    multi_files = repository.db_manager.fetchall()
     
     # Check single part games
     for clean_name, format_ext, collection, source_path in single_files:
@@ -101,5 +103,5 @@ def check_missing_files(db_path="c64_games.db", target_dir="target"):
     
     results['total_missing'] = len(results['missing_singles']) + len(results['missing_multis'])
     
-    db.close()
+    repository.db_manager.close()
     return results

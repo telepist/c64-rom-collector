@@ -1,15 +1,9 @@
 """
-File system operations and filtering functions for the ROM collector.
+Core file operations for the ROM collector.
 """
 import os
-import re
-from pathlib import Path
-from typing import List, Optional
-
-from ..filesys import FileRepository, LocalFileRepository
-
-# Global file repository instance
-file_repository: FileRepository = LocalFileRepository()
+import shutil
+from typing import List
 
 def should_skip_file(path: str, filename: str) -> bool:
     """
@@ -62,12 +56,11 @@ def get_all_collections(base_dir: str) -> List[str]:
     Returns:
         A list of collection directories
     """
-    path = Path(base_dir)
-    if not file_repository.exists(path):
+    if not os.path.exists(base_dir):
         return []
         
-    return [d.name for d in file_repository.list_files(path) 
-            if file_repository.is_dir(d)]
+    return [d for d in os.listdir(base_dir) 
+            if os.path.isdir(os.path.join(base_dir, d))]
 
 
 def clean_directory(directory_path: str) -> bool:
@@ -81,18 +74,19 @@ def clean_directory(directory_path: str) -> bool:
         True if cleaning was successful, False otherwise
     """
     try:
-        path = Path(directory_path)
-        if file_repository.exists(path):
+        # Check if directory exists
+        if os.path.exists(directory_path):
             # Remove all content but keep directory
-            for item in file_repository.list_files(path):
-                if item.is_file():
-                    file_repository.remove_file(item)
-                elif item.is_dir():
-                    file_repository.remove_directory(item, recursive=True)
+            for item in os.listdir(directory_path):
+                item_path = os.path.join(directory_path, item)
+                if os.path.isfile(item_path):
+                    os.unlink(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
             return True
         else:
             # Create directory if it doesn't exist
-            path.mkdir(parents=True, exist_ok=True)
+            os.makedirs(directory_path, exist_ok=True)
             return True
     except Exception as e:
         print(f"Error cleaning directory '{directory_path}': {e}")
@@ -110,24 +104,23 @@ def ensure_directory_exists(directory_path: str) -> bool:
         True if directory exists or was created successfully, False otherwise
     """
     try:
-        path = Path(directory_path)
-        path.mkdir(parents=True, exist_ok=True)
+        os.makedirs(directory_path, exist_ok=True)
         return True
     except Exception as e:
         print(f"Error creating directory '{directory_path}': {e}")
         return False
 
 
-def normalize_path_for_script(path, ensure_prefix=None):
+def normalize_path_for_script(path: str, ensure_prefix: str = None) -> str:
     """
     Normalize a path for use in a shell script (replace backslashes with forward slashes).
     
     Args:
-        path (str): The path to normalize
-        ensure_prefix (str, optional): A prefix to ensure is at the start of the path
+        path: The path to normalize
+        ensure_prefix: A prefix to ensure is at the start of the path
         
     Returns:
-        str: The normalized path
+        The normalized path
     """
     normalized_path = path.replace('\\', '/')
     

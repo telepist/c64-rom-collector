@@ -3,7 +3,8 @@ Module for generating merge script.
 """
 import os
 from ..db.database import DatabaseManager
-from ..utils.file_ops import clean_directory, ensure_directory_exists, normalize_path_for_script
+from ..db.game_repository import GameRepository
+from ..files import clean_directory, ensure_directory_exists, normalize_path_for_script
 
 
 def clean_target_directory(target_dir="target"):
@@ -69,6 +70,7 @@ def generate_merge_script(db_path="c64_games.db", output_path="merge_collection.
     """
     db = DatabaseManager(db_path)
     db.connect()
+    repository = GameRepository(db)
     
     file_count = 0
     
@@ -78,79 +80,30 @@ def generate_merge_script(db_path="c64_games.db", output_path="merge_collection.
         normalized_target = _prepare_path_for_script(target_dir)
         f.write(f'# Create output directory\nmkdir -p "{normalized_target}"\n\n')
         
-        # First, handle single-part games
-        db.execute('''
-            WITH RankedGames AS (
-                SELECT *,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY clean_name 
-                        ORDER BY format_priority DESC, 
-                                 collection ASC
-                    ) as rn
-                FROM games
-                WHERE is_multi_part = 0
-            )
-            SELECT source_path, clean_name, format
-            FROM RankedGames 
-            WHERE rn = 1
-            ORDER BY clean_name
-        ''')
-        
-        # Process single-part games
-        for source_path, clean_name, format_ext in db.fetchall():
+        # Use GameRepository to fetch the best versions of games
+        best_versions = repository.get_best_versions()
+
+        current_game = None
+        for clean_name, format_ext, source_path, part_number, total_parts in best_versions:
             file_count += 1
-            target_name = f"{clean_name}.{format_ext}"
-            target_path = os.path.join(target_dir, target_name)
-            
-            # Use utility functions to normalize paths
             source_path = _prepare_path_for_script(source_path, is_source=True)
-            target_path = _prepare_path_for_script(target_path)
-            
-            _write_copy_command(f, source_path, target_path, target_name)
-        
-        # Then handle multi-part games
-        db.execute('''
-            WITH RankedGames AS (
-                SELECT g.*,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY clean_name 
-                        ORDER BY format_priority DESC,
-                                 collection ASC
-                    ) as rn
-                FROM games g
-                WHERE g.is_multi_part = 1
-            )
-            SELECT g.source_path, g.clean_name, g.format, g.part_number
-            FROM games g
-            JOIN (
-                SELECT clean_name, format, collection
-                FROM RankedGames 
-                WHERE rn = 1
-            ) r ON g.clean_name = r.clean_name 
-                AND g.format = r.format 
-                AND g.collection = r.collection
-            WHERE g.is_multi_part = 1
-            ORDER BY g.clean_name, g.part_number
-        ''')
-        
-        # Process multi-part games
-        for source_path, clean_name, format_ext, part_num in db.fetchall():
-            file_count += 1
-            
-            if part_num > 0:
-                target_name = f"{clean_name} (Disk {part_num}).{format_ext}"
+
+            # For multi-part games, create a subdirectory
+            if total_parts > 1:
+                target_subdir = _prepare_path_for_script(os.path.join(target_dir, clean_name))
+                f.write(f'mkdir -p "{target_subdir}"\n')
+                if current_game != clean_name:
+                    # Add a comment for the start of a multi-part game
+                    f.write(f'\n# Multi-part game: {clean_name}\n')
+                    current_game = clean_name
+                target_file = os.path.join(clean_name, f"{clean_name} (Part {part_number}).{format_ext}")
             else:
-                target_name = f"{clean_name}.{format_ext}"
-            target_path = os.path.join(target_dir, target_name)
+                target_file = f"{clean_name}.{format_ext}"
             
-            # Use utility functions to normalize paths
-            source_path = _prepare_path_for_script(source_path, is_source=True)
-            target_path = _prepare_path_for_script(target_path)
-            
-            _write_copy_command(f, source_path, target_path, target_name)
+            target_path = _prepare_path_for_script(os.path.join(target_dir, target_file))
+            _write_copy_command(f, source_path, target_path, target_file)
     
-    db.close()
+    repository.db_manager.close()
     print(f"Generated {output_path}")
     print(f"Script will copy {file_count} files to the {target_dir} directory.")
-    
     return file_count

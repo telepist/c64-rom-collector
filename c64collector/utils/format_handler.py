@@ -37,7 +37,30 @@ def is_multi_part(path, name):
     Returns:
         bool: True if this is a multi-part game, False otherwise
     """
-    return bool(re.search(r'(Side|Part|Disk)\s*[0-9]+', path + name, re.IGNORECASE))
+    full_path = path + name
+    
+    # Skip certain patterns that might give false positives
+    if any(p in full_path for p in [
+        "Tape Port Dongle",
+        "Savedisk",
+        "Special Edition",
+        "(v2)",
+        "Re-release"
+    ]):
+        return False
+    
+    # Check for various multi-part patterns
+    patterns = [
+        r'(Side|Part|Disk)\s*[0-9]+',  # Side 1, Part 2, Disk 3
+        r'Side\s*[A-B]',               # Side A, Side B
+        r'Part\s*[0-9]+\s*-',          # Part 1 - Name
+        r'Levels?\s*[0-9][\s\-]*(?:and|&|\+)[\s\-]*[0-9]',  # Levels 1 and 2, Level 1-2
+        r'Disk\s*[0-9]+/',             # In directory name
+        r'Side\s*[A-B]/',              # In directory name
+        r'Part\s*[0-9]+/'              # In directory name
+    ]
+    
+    return any(bool(re.search(pattern, full_path, re.IGNORECASE)) for pattern in patterns)
 
 
 def get_multi_part_info(path, name):
@@ -51,7 +74,35 @@ def get_multi_part_info(path, name):
     Returns:
         int: The part number, or 0 if not found
     """
-    match = re.search(r'(Side|Part|Disk)\s*([0-9]+)', path + name, re.IGNORECASE)
+    full_path = path + name
+    
+    # Skip certain patterns
+    if any(p in full_path for p in [
+        "Tape Port Dongle",
+        "Savedisk",
+        "Special Edition",
+        "(v2)",
+        "Re-release"
+    ]):
+        return 0
+        
+    # First try normal numeric patterns
+    match = re.search(r'(Side|Part|Disk)\s*([0-9]+)', full_path, re.IGNORECASE)
     if match:
         return int(match.group(2))
+    
+    # Check for Side A/B format
+    match = re.search(r'Side\s*([A-B])', full_path, re.IGNORECASE)
+    if match:
+        # Convert A -> 1, B -> 2
+        return ord(match.group(1).upper()) - ord('A') + 1
+      # Handle sequential level numbering
+    matches = list(re.finditer(r'Levels?\s*([0-9]+)(?:\s*(?:and|&|\+|-)\s*([0-9]+))?', full_path, re.IGNORECASE))
+    if matches:
+        # Count how many level pairs came before this one
+        current_match = matches[0]
+        first_num = int(current_match.group(1))
+        # Return the sequence number (1 for levels 1-2, 2 for levels 3-4, etc)
+        return (first_num + 1) // 2
+    
     return 0

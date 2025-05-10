@@ -3,7 +3,8 @@ Import module that processes game files and imports them into the database.
 """
 import os
 from ..db.database import DatabaseManager
-from ..utils.file_ops import get_all_collections
+from ..db.game_repository import GameRepository
+from ..files import get_all_collections
 from ..core.processor import scan_directory
 
 
@@ -24,6 +25,7 @@ def import_games(src_dir="src", db_path="c64_games.db"):
     db = DatabaseManager(db_path)
     db.connect()
     db.reset_schema()
+    repository = GameRepository(db)
     
     all_game_data = []
     stats = {
@@ -61,19 +63,19 @@ def import_games(src_dir="src", db_path="c64_games.db"):
     for game_data in all_game_data:
         batch_data.append(game_data)
         if len(batch_data) >= 1000:
-            _insert_batch(db, batch_data)
+            _insert_batch(repository, batch_data)
             batch_data = []
             
     if batch_data:
-        _insert_batch(db, batch_data)
+        _insert_batch(repository, batch_data)
     
     # Get stats using the new schema
     # Count unique games
-    db.execute('SELECT COUNT(*) FROM games')
-    stats['unique_games'] = db.fetchone()[0]
+    repository.db_manager.execute('SELECT COUNT(*) FROM games')
+    stats['unique_games'] = repository.db_manager.fetchone()[0]
     
     # Count multi-part games (games that have versions with multiple parts)
-    db.execute('''
+    repository.db_manager.execute('''
         SELECT COUNT(DISTINCT g.id) 
         FROM games g 
         JOIN game_versions v ON g.id = v.game_id 
@@ -81,15 +83,15 @@ def import_games(src_dir="src", db_path="c64_games.db"):
         JOIN game_parts p2 ON v.id = p2.version_id 
         WHERE p1.part_number < p2.part_number
     ''')
-    stats['multi_games'] = db.fetchone()[0]
+    stats['multi_games'] = repository.db_manager.fetchone()[0]
     
     db.close()
     print("\nImport complete!")
     return stats
 
 
-def _insert_batch(db, batch):
+def _insert_batch(repository, batch):
     """Helper function to insert a batch of records"""
     for game_data in batch:
-        db.insert_game(game_data)
-    db.commit()
+        repository.insert_game(game_data)
+    repository.db_manager.commit()
