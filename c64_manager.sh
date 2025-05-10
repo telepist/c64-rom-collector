@@ -36,24 +36,24 @@ fi
 case "$1" in
     import)
         echo "Importing games from source collections (will clear existing database)..."
-        python -m c64collector.cli import
+        python -m src.cli import
         ;;
     generate)
         echo "Generating merge script..."
-        python -m c64collector.cli generate
+        python -m src.cli generate
         ;;
     merge)
         echo "Running merge script to create target collection..."
-        python -m c64collector.cli merge
+        python -m src.cli merge
         ;;
     run)
         echo "Running complete workflow: import, generate, and merge..."
         echo "Step 1/3: Importing games from source collections..."
-        python -m c64collector.cli import
+        python -m src.cli import
         echo "Step 2/3: Generating merge script..."
-        python -m c64collector.cli generate
+        python -m src.cli generate
         echo "Step 3/3: Running merge script to create target collection..."
-        python -m c64collector.cli merge
+        python -m src.cli merge
         echo "Complete workflow finished successfully!"
         ;;
     verify)

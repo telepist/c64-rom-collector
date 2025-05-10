@@ -10,9 +10,9 @@ import subprocess
 # Add parent directory to path for imports to work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from c64collector.core.importer import import_games
-from c64collector.core.merger import generate_merge_script, clean_target_directory
-from c64collector.core.verifier import check_missing_files
+from src.core.importer import import_games
+from src.core.merger import generate_merge_script, clean_target_directory
+from src.core.verifier import check_missing_files
 
 
 def main():

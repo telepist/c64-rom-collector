@@ -1,5 +1,5 @@
-# Ignore ROM collections (source files)
-src/
+# Ignore ROM collections (ROM files)
+roms/
 
 # Ignore the target directory with the consolidated collection
 target/

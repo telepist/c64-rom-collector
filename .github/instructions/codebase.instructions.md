@@ -17,18 +17,20 @@ The project is organized into the following main directories:
 
 ```
 .
-├── c64collector/          # Main Python package
-│   ├── core/             # ROM processing, importing, merging, verification
-│   ├── db/              # Database operations and data access
-│   ├── files/           # File operations and path handling
-│   └── utils/           # General utility functions and name cleaning
-├── src/                 # Source ROM collections (No-Intro, OneLoad64, etc.)
-├── target/             # Output directory for processed ROMs
-└── tests/              # Test suite with unit tests
+├── roms/                # ROM collections (No-Intro, OneLoad64, etc.)
+├── src/                # Source code
+│   ├── core/          # ROM processing, importing, merging, verification
+│   ├── db/           # Database operations and data access
+│   ├── files/        # File operations and path handling
+│   ├── utils/        # General utility functions and name cleaning
+│   └── cli.py        # Command-line interface
+├── target/            # Output directory for processed ROMs
+└── tests/             # Test suite with unit tests
 ```
 
 Special Directories:
-- `src/`: Contains original ROM collections (excluded from version control)
+- `roms/`: Contains original ROM collections (excluded from version control)
+- `src/`: Contains source code
 - `target/`: Stores processed and normalized ROM files
 - `tests/`: Comprehensive test suite mirroring the main package structure
 
@@ -48,16 +50,17 @@ Key Files:
 
 ### Separation of Concerns
 1. Maintain clear layer separation:
-   - Core logic (`core/`): Business rules and ROM processing
-   - Data access (`db/`): Database operations and data models
-   - File operations (`files/`): File system operations and path handling
-   - Utilities (`utils/`): General helper functions
+   - Core logic (`src/core/`): Business rules and ROM processing
+   - Data access (`src/db/`): Database operations and data models
+   - File operations (`src/files/`): File system operations and path handling
+   - Utilities (`src/utils/`): General helper functions
+   - CLI interface (`src/cli.py`): Command-line interface and user interaction
 2. Avoid mixing concerns:
    - Keep UI/CLI logic separate from business logic
    - Database operations should be isolated in the db layer
    - File operations should be handled by files module
 3. File system access guidelines:
-   - All file operations must go through the `files` module
+   - All file operations must go through the `src/files` module
    - Core modules should use file operations from the files module
    - Use consistent path handling through provided functions
    - Handle file system errors at appropriate levels
@@ -96,7 +99,7 @@ Key Files:
 ## Command Usage
 Follow the established command patterns:
 - Use `./c64_manager.sh` for main operations
-    - `run` for running the main script, runs `import`, `verify`, and `generate` commands
+    - `run` for running the main script, runs `import`, `generate`, and `merge` commands
     - `import` for importing ROMs
     - `generate` for generating output files
     - `merge` for merging collections

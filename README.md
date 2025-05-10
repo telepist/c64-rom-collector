@@ -26,7 +26,7 @@ Processes Commodore 64 game files from source directories and imports them into 
 ```
 
 **Features:**
-- Recursively scans the `src/` directory for ROM files
+- Recursively scans the `roms/` directory for ROM files
 - Cleans game names by removing region markers, version information, etc.
 - Identifies multi-part games (games spanning multiple disks/tapes)
 - Assigns format priorities (cartridge > disk > tape)
@@ -161,9 +161,15 @@ WHERE g.is_multi_part = 1
 
 The project uses the following directory structure:
 
-- `src/` - Contains source ROM collections (No-Intro, OneLoad64-Games-Collection-v3, etc.)
+- `src/` - Contains source code
+  - `core/` - ROM processing, importing, merging, verification
+  - `db/` - Database operations and data models
+  - `files/` - File system operations and path handling
+  - `utils/` - General utility functions and name cleaning
+  - `cli.py` - Command-line interface
+- `roms/` - Contains original ROM collections (No-Intro, OneLoad64, etc.)
 - `target/` - Contains the consolidated best version of each game
-- `scripts/` - Directory containing Python scripts for managing and verifying the collection
+- `tests/` - Comprehensive test suite mirroring the main package structure
 - `c64_games.db` - SQLite database containing normalized game metadata
 - `c64_manager.sh` - Main shell script for running the manager
 - `merge_collection.sh` - Generated script to copy games to the target directory
@@ -172,7 +178,7 @@ The project uses the following directory structure:
 
 ### 1. Initial Setup
 
-1. Place your ROM collections in the `src/` directory (each collection should be a separate subdirectory)
+1. Place your ROM collections in the `roms/` directory (each collection should be a separate subdirectory)
 
 2. Run the import script to scan files and create the database:
    ```bash
@@ -180,7 +186,7 @@ The project uses the following directory structure:
    ```
    
    The script will:
-   - Recursively scan all collections in the `src/` directory
+   - Recursively scan all collections in the `roms/` directory
    - Filter out non-game files and system utilities
    - Process and normalize all game files
    - Create a SQLite database with all game information
