@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from c64collector.filesys import FileRepository, LocalFileRepository
-from c64collector.utils.file_ops import (
+from c64collector.files.operations import (
     clean_directory,
     ensure_directory_exists,
     get_all_collections,
