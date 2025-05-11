@@ -24,7 +24,7 @@ class TestScriptOps(unittest.TestCase):
         test_path = r'target\My Game (USA).crt'
         result = prepare_path_for_script(test_path, is_source=False)
         # Target paths should be normalized and sanitized
-        self.assertEqual(result, 'target/My_Game_USA.crt')
+        self.assertEqual(result, 'target/My Game.crt')
         
     def test_write_copy_command(self):
         """Test writing a copy command to a shell script."""

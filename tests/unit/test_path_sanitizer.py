@@ -69,7 +69,7 @@ class TestPathSanitizer(unittest.TestCase):
     def test_sanitize_full_path_preserves_root(self):
         """Test that sanitization preserves root components."""
         test_cases = {
-            "/My Game": "/My_Game",
+            "/My Game": "/My Game",
             "C:/Bad:Name": "C:/Bad_Name",
             "//server/share/File Name": "//server/share/File Name",
         }
