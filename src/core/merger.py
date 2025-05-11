@@ -110,6 +110,7 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
         for game_name, disk_files in m3u_files.items():
             m3u_path = os.path.join(target_dir, f"{sanitize_directory_name(game_name)}.m3u")
             f.write(f'\n# Create {game_name} playlist\n')
+            f.write(f'echo "Generating M3U playlist for {game_name}"\n')
             f.write(f'cat > "{normalize_path_for_script(m3u_path)}" << EOL\n')
             # Write disk paths with labels
             for rel_path, label in disk_files:
