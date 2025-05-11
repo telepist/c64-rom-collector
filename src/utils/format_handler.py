@@ -2,6 +2,7 @@
 Functions for format prioritization and multi-part game detection.
 """
 import re
+from src.config import FORMAT_PRIORITIES, SKIP_PATTERNS, MULTI_PART_PATTERNS
 
 
 def get_format_priority(filename):
@@ -15,18 +16,9 @@ def get_format_priority(filename):
           3: Cartridge (.crt) - Most reliable, original hardware format
           2: Disk images (.d64, .g64, .nib) - Complete disk images with protection
           1: Program files (.prg), Tape images (.tap, .t64) - Lowest priority
-          0: Unknown formats"""
+          0: Unknown formats"""    
     ext = filename.lower().split('.')[-1]
-    priorities = {
-        'crt': 3,  # cartridges highest priority
-        'd64': 2,  # disk images second (complete with protection)
-        'g64': 2,
-        'nib': 2,
-        'prg': 1,  # program files third (may miss custom loaders)
-        'tap': 1,  # tapes lowest priority
-        't64': 1
-    }
-    return priorities.get(ext, 0)
+    return FORMAT_PRIORITIES.get(ext, 0)
 
 
 def is_multi_part(path, name):
@@ -41,27 +33,12 @@ def is_multi_part(path, name):
         bool: True if this is a multi-part game, False otherwise
     """
     full_path = path + name
-    
-    # Skip certain patterns that might give false positives
-    if any(p in full_path for p in [
-        "Tape Port Dongle",
-        "Savedisk",
-        "Special Edition",
-        "(v2)",
-        "Re-release"
-    ]):
+      # Skip certain patterns that might give false positives
+    if any(p in full_path for p in SKIP_PATTERNS):
         return False
     
     # Check for various multi-part patterns
-    patterns = [
-        r'(Side|Part|Disk)\s*[0-9]+',  # Side 1, Part 2, Disk 3
-        r'Side\s*[A-B]',               # Side A, Side B
-        r'Part\s*[0-9]+\s*-',          # Part 1 - Name
-        r'Levels?\s*[0-9][\s\-]*(?:and|&|\+)[\s\-]*[0-9]',  # Levels 1 and 2, Level 1-2
-        r'Disk\s*[0-9]+/',             # In directory name
-        r'Side\s*[A-B]/',              # In directory name
-        r'Part\s*[0-9]+/'              # In directory name
-    ]
+    patterns = MULTI_PART_PATTERNS
     
     return any(bool(re.search(pattern, full_path, re.IGNORECASE)) for pattern in patterns)
 

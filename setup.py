@@ -2,9 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="c64collector",
-    version="1.0.0",
-    package_dir={"c64collector": "src"},
-    packages=["c64collector"],
+    version="1.0.0",    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     description="Commodore 64 ROM Collection Manager",
     author="Original Author",
     python_requires=">=3.6",

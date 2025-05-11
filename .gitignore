@@ -4,11 +4,8 @@ roms/
 # Ignore the target directory with the consolidated collection
 target/
 
-# Ignore the database file (can be regenerated from source)
-c64_games.db
-
-# Ignore the generated merge script
-merge_collection.sh
+# Ignore build directory containing generated files
+build/
 
 # Ignore Python bytecode files
 __pycache__/

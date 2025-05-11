@@ -7,32 +7,30 @@ import sys
 import os
 import subprocess
 
-# Add parent directory to path for imports to work
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from src.config import ROMS_DIR, DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
 from src.core.importer import import_games
 from src.core.merger import generate_merge_script, clean_target_directory
 
 
 def main():
     parser = argparse.ArgumentParser(description="C64 ROM Collection Manager")
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")
-    
-    # Import command
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")    # Import command
     import_parser = subparsers.add_parser("import", help="Import games from ROM directories")
-    import_parser.add_argument("--src", default="roms", help="ROMs directory")
-    import_parser.add_argument("--db", default="c64_games.db", help="Database path")
+    import_parser.add_argument("--src", default=str(ROMS_DIR), help="ROMs directory")
+    import_parser.add_argument("--db", default=str(DATABASE_PATH), help="Database path")
     
     # Generate command
     generate_parser = subparsers.add_parser("generate", help="Generate merge script")
-    generate_parser.add_argument("--db", default="c64_games.db", help="Database path")
-    generate_parser.add_argument("--output", default="merge_collection.sh", help="Output script path")
-    generate_parser.add_argument("--target", default="target", help="Target directory")
-    
-    # Merge command
+    generate_parser.add_argument("--db", default=str(DATABASE_PATH), help="Database path")
+    generate_parser.add_argument("--output", default=str(MERGE_SCRIPT_PATH), help="Output script path")
+    generate_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")
+      # Merge command
     merge_parser = subparsers.add_parser("merge", help="Merge the collection to target directory")
-    merge_parser.add_argument("--target", default="target", help="Target directory")
-    merge_parser.add_argument("--script", default="merge_collection.sh", help="Merge script to run")
+    merge_parser.add_argument("--target", default=str(), help="Target directory")
+    merge_parser.add_argument("--script", default=str(MERGE_SCRIPT_PATH), help="Merge script to run")
     
     # Version command
     subparsers.add_parser("version", help="Show version information")

@@ -2,13 +2,14 @@
 Import module that processes game files and imports them into the database.
 """
 import os
+from ..config import ROMS_DIR, DATABASE_PATH, BATCH_SIZE
 from ..db.database import DatabaseManager
 from ..db.game_repository import GameRepository
 from ..files import get_all_collections
 from ..core.processor import scan_directory
 
 
-def import_games(src_dir="roms", db_path="c64_games.db"):
+def import_games(src_dir=ROMS_DIR, db_path=DATABASE_PATH):
     """
     Import games from the file system into the database.
     
@@ -57,12 +58,11 @@ def import_games(src_dir="roms", db_path="c64_games.db"):
         stats['error_files'] += errors
         
     print(f"\nProcessed {stats['processed_files']} files, now importing to database...")
-    
-    # Batch insert into database
+      # Batch insert into database
     batch_data = []
     for game_data in all_game_data:
         batch_data.append(game_data)
-        if len(batch_data) >= 1000:
+        if len(batch_data) >= BATCH_SIZE:
             _insert_batch(repository, batch_data)
             batch_data = []
             

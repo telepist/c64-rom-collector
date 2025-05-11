@@ -158,7 +158,9 @@ The project uses the following directory structure:
 - `roms/` - Contains original ROM collections (No-Intro, OneLoad64, etc.)
 - `target/` - Contains the consolidated best version of each game
 - `tests/` - Comprehensive test suite mirroring the main package structure
-- `c64_games.db` - SQLite database containing normalized game metadata
+- `build/` - Contains generated files and build artifacts
+  - `c64_games.db` - SQLite database with normalized game metadata
+  - `merge_collection.sh` - Generated script for collection management
 - `c64_manager.sh` - Main shell script for running the manager
 
 ## Usage Instructions

@@ -2,10 +2,11 @@
 Database operations for the ROM collector.
 """
 import sqlite3
+from ..config import DATABASE_PATH
 
 
 class DatabaseManager:
-    def __init__(self, db_path='c64_games.db'):
+    def __init__(self, db_path=DATABASE_PATH):
         """Initialize the database manager."""
         self.db_path = db_path
         self.conn = None

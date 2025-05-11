@@ -72,12 +72,14 @@ Key Files:
 ### Testing Requirements
 1. All code must be unit tested:
    - Every module must have corresponding tests in `tests/unit/`
-   - Test files should mirror the main package structure
+   - Test files should use a flat structure under `tests/unit/`
+   - Test files should be named `test_*.py` matching their tested module
    - Each public function must have test coverage
    - Test edge cases and error conditions
 2. Test organization:
    - Group related test cases using test classes
-   - Use descriptive test names that explain the scenario
+   - Use descriptive test names that explain the scenario and tested module
+   - Test filenames should clearly indicate their tested module (e.g., `test_database.py` for `src/db/database.py`)
    - Follow the "Arrange-Act-Assert" pattern
    - Mock external dependencies (database, filesystem)
 
