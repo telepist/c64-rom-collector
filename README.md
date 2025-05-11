@@ -243,4 +243,6 @@ The system ensures that games are properly organized by:
 
 ## License
 
-This project is for personal use only.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Note**: This tool is for managing ROM collections and does not include any ROM files. Users are responsible for ensuring they have the legal right to use any ROM files they manage with this tool.

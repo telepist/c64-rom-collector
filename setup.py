@@ -5,7 +5,7 @@ setup(
     version="1.0.0",    packages=find_packages(where="src"),
     package_dir={"": "src"},
     description="Commodore 64 ROM Collection Manager",
-    author="Original Author",
+    author="Teemu Lepistö",
     python_requires=">=3.6",
     install_requires=[
         "tqdm",
