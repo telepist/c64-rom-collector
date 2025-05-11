@@ -26,10 +26,9 @@ def main():
     generate_parser = subparsers.add_parser("generate", help="Generate merge script")
     generate_parser.add_argument("--db", default=str(DATABASE_PATH), help="Database path")
     generate_parser.add_argument("--output", default=str(MERGE_SCRIPT_PATH), help="Output script path")
-    generate_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")
-      # Merge command
+    generate_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")    # Merge command
     merge_parser = subparsers.add_parser("merge", help="Merge the collection to target directory")
-    merge_parser.add_argument("--target", default=str(), help="Target directory")
+    merge_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")
     merge_parser.add_argument("--script", default=str(MERGE_SCRIPT_PATH), help="Merge script to run")
     
     # Version command

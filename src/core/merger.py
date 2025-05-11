@@ -13,7 +13,7 @@ from src.files import (
 )
 
 
-def clean_target_directory(target_dir="target"):
+def clean_target_directory(target_dir=str(TARGET_DIR)):
     """
     Remove all files from the target directory.
     
