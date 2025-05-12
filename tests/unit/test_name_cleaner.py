@@ -2,7 +2,7 @@
 Unit tests for the name cleaner utility.
 """
 import unittest
-from c64collector.utils.name_cleaner import clean_name
+from utils.name_cleaner import clean_name
 
 
 class TestNameCleaner(unittest.TestCase):

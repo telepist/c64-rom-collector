@@ -5,7 +5,7 @@ import os
 import shutil
 from pathlib import Path
 from typing import List, Union, Iterator
-from ..config import FORMAT_PRIORITIES, SKIP_PATTERNS
+from config import FORMAT_PRIORITIES, SKIP_PATTERNS
 
 def should_skip_file(path: str, filename: str) -> bool:
     """
@@ -64,6 +64,14 @@ def clean_directory(directory_path: str) -> bool:
     try:
         # Check if directory exists
         if os.path.exists(directory_path):
+            # Test write access by trying to add a subdirectory
+            test_dir = os.path.join(directory_path, '.test')
+            try:
+                os.makedirs(test_dir, exist_ok=True)
+                os.rmdir(test_dir)
+            except (IOError, OSError, PermissionError):
+                return False
+                
             # Remove all content but keep directory
             for item in os.listdir(directory_path):
                 item_path = os.path.join(directory_path, item)

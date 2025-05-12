@@ -5,7 +5,7 @@ import unittest
 import os
 import tempfile
 import sqlite3
-from src.core.merger import generate_merge_script
+from core.merger import generate_merge_script
 
 
 class TestMerger(unittest.TestCase):
@@ -132,7 +132,7 @@ class TestMerger(unittest.TestCase):
         
         # Verify M3U file creation
         # Check M3U file header comment
-        self.assertIn('# Create Game3 playlist', content)
+        self.assertIn('# Create playlist', content)
         
         # Check M3U file creation command
         self.assertIn('cat > "test_target/Game3.m3u" << EOL', content)

@@ -1,7 +1,7 @@
 """Tests for path sanitization operations."""
 import unittest
 
-from src.files.path_sanitizer import (
+from files.path_sanitizer import (
     sanitize_directory_name,
     sanitize_full_path
 )

@@ -2,7 +2,7 @@
 Functions for format prioritization and multi-part game detection.
 """
 import re
-from src.config import FORMAT_PRIORITIES, SKIP_PATTERNS, MULTI_PART_PATTERNS
+from config import FORMAT_PRIORITIES, SKIP_PATTERNS, MULTI_PART_PATTERNS
 
 
 def get_format_priority(filename):

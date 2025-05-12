@@ -5,8 +5,8 @@ import unittest
 import sqlite3
 import os
 import tempfile
-from src.db.database import DatabaseManager
-from src.db.game_repository import GameRepository
+from db.database import DatabaseManager
+from db.game_repository import GameRepository
 
 
 class TestDatabaseManager(unittest.TestCase):

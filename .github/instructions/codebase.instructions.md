@@ -62,11 +62,21 @@ Key Files:
 3. File system access guidelines:
    - All file operations must go through the `src/files` module
    - Core modules should use file operations from the files module
-   - Use consistent path handling through provided functions
-   - Handle file system errors at appropriate levels
-   - Provide meaningful error messages for file operations
+   - Cross-platform path handling requirements:
+     * Use pathlib.Path for all path operations
+     * Never concatenate paths with string operations
+     * Always handle both Windows and Unix-style paths
+     * Test path operations on all target platforms
+   - Platform-specific considerations:
+     * Handle different root path styles (C:\ vs /)
+     * Consider path length limitations on Windows
+     * Handle case sensitivity differences
+     * Support both local and network paths
+   - Error handling:
+     * Handle platform-specific filesystem errors
+     * Provide meaningful error messages with platform context
+     * Implement appropriate fallbacks for each platform
    - Use type hints and proper error handling
-   - Support both Windows and Unix-style paths
    - Follow platform-independent path handling practices
 
 ### Testing Requirements
@@ -84,19 +94,41 @@ Key Files:
    - Mock external dependencies (database, filesystem)
 
 ### Best Practices
-1. Code quality:
+1. Cross-Platform Compatibility:
+   - Always ensure code works across all target platforms:
+     * Windows (both CMD and Git Bash)
+     * Linux (various distributions)
+     * macOS
+   - Use platform-agnostic path handling:
+     * Use Path objects from pathlib
+     * Avoid hardcoded path separators
+     * Handle both forward and backslashes
+   - Shell script compatibility:
+     * Provide both .sh and .cmd versions when needed
+     * Test commands in all target environments
+     * Use environment detection for platform-specific code
+   - Python compatibility:
+     * Handle different Python command names (python3, python, py)
+     * Consider Python launcher on Windows (py)
+     * Support both forward and backward slashes in paths
+
+2. Code quality:
    - Write self-documenting code with clear names
    - Add docstrings to all public functions and classes
    - Keep functions small and focused
    - Use type hints for better code clarity
-2. Error handling:
+
+3. Error handling:
    - Use appropriate exception types
    - Handle errors at the appropriate level
    - Provide meaningful error messages
-3. Configuration:
+   - Include platform-specific error handling where needed
+
+4. Configuration:
    - Keep configuration separate from code
    - Use environment variables for sensitive data
    - Make parameters configurable where appropriate
+   - Support platform-specific default locations
 
 ## Command Usage
 Follow the established command patterns:

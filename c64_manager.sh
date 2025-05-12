@@ -3,6 +3,32 @@
 # C64 ROM Collection Manager
 # A shell script to easily run different management functions
 
+# Find the appropriate Python command
+get_python_cmd() {
+    # Check for python3 first (common on Unix systems)
+    if command -v python3 &> /dev/null; then
+        echo "python3"
+        return
+    fi
+    # Check for py launcher (Windows)
+    if command -v py &> /dev/null; then
+        echo "py -3"
+        return
+    fi
+    # Fall back to python if it's available and is Python 3
+    if command -v python &> /dev/null; then
+        if python --version 2>&1 | grep -q "Python 3"; then
+            echo "python"
+            return
+        fi
+    fi
+    echo "Error: Python 3 not found" >&2
+    exit 1
+}
+
+# Get Python command
+PYTHON_CMD=$(get_python_cmd)
+
 # Display help message
 show_help() {
     echo "C64 ROM Collection Manager"
@@ -34,42 +60,42 @@ fi
 case "$1" in
     import)
         echo "Importing games from source collections (will clear existing database)..."
-        python -m src.cli import
+        cd src && $PYTHON_CMD cli.py import
         ;;
     generate)
         echo "Generating merge script..."
-        python -m src.cli generate
+        cd src && $PYTHON_CMD cli.py generate
         ;;
     merge)
         echo "Running merge script to create target collection..."
-        python -m src.cli merge
+        cd src && $PYTHON_CMD cli.py merge
         ;;
     run)
         echo "Running complete workflow: import, generate, and merge..."
         echo "Step 1/3: Importing games from source collections..."
-        python -m src.cli import
+        cd src && $PYTHON_CMD cli.py import || exit 1
         echo "Step 2/3: Generating merge script..."
-        python -m src.cli generate
+        $PYTHON_CMD cli.py generate || exit 1
         echo "Step 3/3: Running merge script to create target collection..."
-        python -m src.cli merge
+        $PYTHON_CMD cli.py merge || exit 1
         echo "Complete workflow finished successfully!"
         ;;
     count)
         echo "Running count check..."
-        python -m src.cli count
+        cd src && $PYTHON_CMD cli.py count
         ;;
     version)
         echo "Showing version information..."
-        python -m src.cli version
+        cd src && $PYTHON_CMD cli.py version
         ;;
     test)
         # Handle test type and optional arguments
         if [ "$2" = "unit" ] || [ "$2" = "integration" ]; then
             echo "Running $2 tests..."
-            python -m src.cli test "$2" "${@:3}"
+            cd src && $PYTHON_CMD cli.py test "$2" "${@:3}"
         else
             echo "Running all tests..."
-            python -m src.cli test "${@:2}"
+            cd src && $PYTHON_CMD cli.py test "${@:2}"
         fi
         ;;
     help)

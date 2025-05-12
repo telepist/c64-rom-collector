@@ -9,12 +9,10 @@ import subprocess
 import platform
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from c64collector.config import ROMS_DIR, DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
-from c64collector.core.importer import import_games
-from c64collector.core.merger import generate_merge_script, clean_target_directory
+# Local imports from src/
+from config import ROMS_DIR, DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
+from core.importer import import_games
+from core.merger import generate_merge_script, clean_target_directory
 
 
 def detect_platform_and_shell():
@@ -146,6 +144,8 @@ def main():
         print("C64 ROM Collection Manager v1.0.0")
     
     elif args.command == "test":
+        # Add parent directory to path for importing tests
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
         from tests.run_tests import run_tests
         
         class TestArgs:

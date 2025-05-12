@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from c64collector.files.operations import (
+from files.operations import (
     should_skip_file,
     get_all_collections,
     clean_directory,

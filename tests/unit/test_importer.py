@@ -6,7 +6,7 @@ import os
 import tempfile
 import shutil
 import sqlite3
-from c64collector.core.importer import import_games
+from core.importer import import_games
 
 
 class TestImporter(unittest.TestCase):

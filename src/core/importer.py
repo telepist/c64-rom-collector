@@ -2,11 +2,11 @@
 Import module that processes game files and imports them into the database.
 """
 import os
-from ..config import ROMS_DIR, DATABASE_PATH, BATCH_SIZE
-from ..db.database import DatabaseManager
-from ..db.game_repository import GameRepository
-from ..files import get_all_collections
-from ..core.processor import scan_directory
+from config import ROMS_DIR, DATABASE_PATH, BATCH_SIZE
+from db.database import DatabaseManager
+from db.game_repository import GameRepository
+from files import get_all_collections
+from core.processor import scan_directory
 
 
 def import_games(src_dir=ROMS_DIR, db_path=DATABASE_PATH):

@@ -2,7 +2,7 @@
 Unit tests for the format handler utility.
 """
 import unittest
-from c64collector.utils.format_handler import (
+from utils.format_handler import (
     get_format_priority, 
     is_multi_part, 
     get_multi_part_info

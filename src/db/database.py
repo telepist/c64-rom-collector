@@ -3,7 +3,7 @@ Database operations for the ROM collector.
 """
 import os
 import sqlite3
-from ..config import DATABASE_PATH
+from config import DATABASE_PATH
 
 
 class DatabaseManager:

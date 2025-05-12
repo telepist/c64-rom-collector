@@ -4,7 +4,7 @@ Unit tests for the processor module.
 import unittest
 from unittest import mock
 import os
-from c64collector.core.processor import process_file, scan_directory
+from core.processor import process_file, scan_directory
 
 
 class TestProcessor(unittest.TestCase):
@@ -49,8 +49,8 @@ class TestProcessor(unittest.TestCase):
         self.assertIsNone(result)
         
     @mock.patch('os.walk')
-    @mock.patch('c64collector.core.processor.process_file')
-    @mock.patch('c64collector.core.processor.should_skip_file')
+    @mock.patch('core.processor.process_file')
+    @mock.patch('core.processor.should_skip_file')
     def test_scan_directory(self, mock_should_skip, mock_process_file, mock_walk):
         # Mock os.walk to return some test files
         mock_walk.return_value = [

@@ -3,7 +3,7 @@ import io
 import os
 import unittest
 
-from src.files.script_ops import (
+from files.script_ops import (
     prepare_path_for_script,
     write_copy_command,
     write_m3u_playlist

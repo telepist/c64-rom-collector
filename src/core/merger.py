@@ -5,10 +5,10 @@ import os
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from c64collector.config import DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
-from c64collector.db.database import DatabaseManager
-from c64collector.db.game_repository import GameRepository
-from c64collector.files import (
+from config import DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
+from db.database import DatabaseManager
+from db.game_repository import GameRepository
+from files import (
     clean_directory,
     normalize_path_for_script,
     sanitize_directory_name,
