@@ -1,4 +1,4 @@
-# Ignore ROM collections (ROM files)
+# Ignore ROM collections (ROM files) but keep the directory
 roms/*
 
 # Ignore the target directory with the consolidated collection
