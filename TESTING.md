@@ -5,10 +5,19 @@ This guide explains how to run tests for the C64 ROM Collector project.
 ## Prerequisites
 
 1. Python 3.6 or higher is required
-2. Optional: Install the `unittest-xml-reporting` package for XML test reports:
+2. Required packages:
    ```
-   pip install unittest-xml-reporting
+   pip install pytest
    ```
+3. Optional packages:
+   - For XML test reports:
+     ```
+     pip install unittest-xml-reporting
+     ```
+   - For coverage reports:
+     ```
+     pip install coverage
+     ```
 
 ## Running Tests
 
@@ -16,34 +25,38 @@ This guide explains how to run tests for the C64 ROM Collector project.
 
 Run all tests:
 ```bash
-python c64_manager.py test
+./c64_manager.sh test
 ```
 
 Run a specific test module:
 ```bash
-python c64_manager.py test --module name_cleaner
+./c64_manager.sh test --module name_cleaner
+# or
+./c64_manager.sh test --test name_cleaner
 ```
 
 Generate XML test reports (requires unittest-xml-reporting package):
 ```bash
-python c64_manager.py test --xml
+./c64_manager.sh test --xml
 ```
 
 You can combine these options:
 ```bash
-python c64_manager.py test --module format_handler --xml
+./c64_manager.sh test --module format_handler --xml
 ```
 
 #### Available Test Modules
 
 - `database`: Tests for database operations
-- `files`: Tests for file operations
+- `files`: Tests for file operations, including:
+  - File operations and utilities
+  - Path sanitization
+  - Script generation operations
 - `format_handler`: Tests for ROM format handling
 - `importer`: Tests for the import process
 - `merger`: Tests for the merge script generation
 - `name_cleaner`: Tests for ROM name cleaning
-- `processor`: Tests for file processing
-- `verifier`: Tests for collection verification
+- `processor`: Tests for file processing operations
 
 ### Using the Test Runner Directly
 
@@ -81,24 +94,35 @@ class TestNameCleaner(unittest.TestCase):
 
 ## Test Coverage
 
+The project aims for high test coverage across all core functionality. Coverage reports help identify untested code paths.
+
 To run tests with coverage reporting:
 
-1. Install the coverage package:
-   ```
-   pip install coverage
-   ```
-
-2. Run the tests with coverage:
+1. Run the tests with coverage:
    ```
    coverage run -m tests.run_tests
    ```
 
-3. Generate a coverage report:
+2. Generate a coverage report:
    ```
    coverage report
    ```
+   This shows a summary of coverage per module.
 
-   Or an HTML report:
+3. Generate a detailed HTML report:
+   ```
+   coverage html
+   ```
+   This creates an interactive HTML report in the `htmlcov` directory.
+
+### Coverage Goals
+
+- Core modules (src/core/): 90%+ coverage
+- Database operations (src/db/): 90%+ coverage
+- File operations (src/files/): 85%+ coverage
+- Utilities (src/utils/): 85%+ coverage
+
+Critical functionality such as file operations, database management, and ROM processing should have comprehensive test coverage.
    ```
    coverage html
    ```
