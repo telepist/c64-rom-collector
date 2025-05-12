@@ -1,6 +1,7 @@
 """
 Database operations for the ROM collector.
 """
+import os
 import sqlite3
 from ..config import DATABASE_PATH
 
@@ -11,9 +12,17 @@ class DatabaseManager:
         self.db_path = db_path
         self.conn = None
         self.cursor = None
-        
+    
     def connect(self):
         """Connect to the database."""
+        # Ensure directory exists
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir:
+            try:
+                os.makedirs(db_dir, exist_ok=True)
+            except Exception as e:
+                raise sqlite3.OperationalError(f"Could not create database directory: {e}")
+        
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
         return self.conn

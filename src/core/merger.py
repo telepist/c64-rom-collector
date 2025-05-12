@@ -2,10 +2,13 @@
 Module for generating merge script.
 """
 import os
-from ..config import DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
-from ..db.database import DatabaseManager
-from src.db.game_repository import GameRepository
-from src.files import (
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+from c64collector.config import DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
+from c64collector.db.database import DatabaseManager
+from c64collector.db.game_repository import GameRepository
+from c64collector.files import (
     clean_directory,
     normalize_path_for_script,
     sanitize_directory_name,
@@ -14,46 +17,68 @@ from src.files import (
 
 
 def clean_target_directory(target_dir=str(TARGET_DIR)):
-    """
-    Remove all files from the target directory.
-    
-    Args:
-        target_dir (str): Path to the target directory
-    
-    Returns:
-        bool: True if cleaning was successful, False otherwise
-    """
-    result = clean_directory(target_dir)
-    if result:
-        print(f"Target directory '{target_dir}' has been cleaned.")
-    else:
-        print(f"Failed to clean target directory '{target_dir}'.")
-    return result
+    """Clean target directory."""
+    try:
+        return clean_directory(target_dir)
+    except Exception as e:
+        print(f"Error cleaning target directory: {e}")
+        return False
 
 
-def _write_copy_command(script_file, source_path, target_path, target_name):
-    """
-    Write a shell script command to copy a file.
-    
-    Args:
-        script_file: File object to write to
-        source_path: Source file path
-        target_path: Target file path
-        target_name: Name of the target file (for display)
-    """
-    # For display, replace backslashes with forward slashes and clean up double quotes
-    display_name = target_name.replace('\\', '/').replace('"', '')
-    script_file.write(f'echo "Copying {display_name}"\n')
-    script_file.write(f'cp "{source_path}" "{target_path}" || echo "Failed to copy {display_name}"\n\n')
+def _write_copy_command_sh(script_file, source_path: str, target_path: str, target_name: str):
+    """Write a copy command for shell script."""
+    script_file.write(f'cp "{source_path}" "{target_path}"\n')
+
+
+def _write_copy_command_cmd(script_file, source_path: str, target_path: str, target_name: str):
+    """Write a copy command for Windows batch script."""
+    # Convert forward slashes to backslashes for Windows
+    source_path = source_path.replace('/', '\\')
+    target_path = target_path.replace('/', '\\')
+    script_file.write(f'copy "{source_path}" "{target_path}"\n')
+
+
+def _write_mkdir_command_sh(script_file, directory: str):
+    """Write a mkdir command for shell script."""
+    script_file.write(f'mkdir -p "{directory}"\n')
+
+
+def _write_mkdir_command_cmd(script_file, directory: str):
+    """Write a mkdir command for Windows batch script."""
+    # Convert forward slashes to backslashes for Windows
+    directory = directory.replace('/', '\\')
+    script_file.write(f'if not exist "{directory}" mkdir "{directory}"\n')
+
+
+def _write_m3u_file_sh(script_file, m3u_path: str, disk_files: List[Tuple[str, str]]):
+    """Write M3U file creation for shell script."""
+    script_file.write(f'\n# Create playlist\n')
+    script_file.write(f'cat > "{m3u_path}" << EOL\n')
+    for rel_path, label in disk_files:
+        script_file.write(f'{rel_path}|{label}\n')
+    script_file.write('EOL\n')
+
+
+def _write_m3u_file_cmd(script_file, m3u_path: str, disk_files: List[Tuple[str, str]]):
+    """Write M3U file creation for Windows batch script."""
+    m3u_path = m3u_path.replace('/', '\\')
+    script_file.write(f'\nREM Create playlist\n')
+    # Use temporary file to avoid redirection issues with special characters
+    script_file.write('@echo off\n')
+    for rel_path, label in disk_files:
+        rel_path = rel_path.replace('/', '\\')
+        # Escape special characters and use echo with >> for append
+        script_file.write(f'echo {rel_path}^|{label}>>"{m3u_path}"\n')
 
 
 def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, target_dir=TARGET_DIR):
     """
     Generate a script to copy the best version of each game to the target directory.
+    Generates both shell script and batch script versions.
     
     Args:
         db_path (str): Path to the database
-        output_path (str): Path to save the generated script
+        output_path (str): Base path for the generated scripts
         target_dir (str): Target directory for the merged collection
         
     Returns:
@@ -64,34 +89,50 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
     repository = GameRepository(db)
     
     file_count = 0
-    m3u_files = {}
+    m3u_files: Dict[str, List[Tuple[str, str]]] = {}
+
+    # Define script paths
+    sh_path = str(Path(output_path))
+    cmd_path = str(Path(output_path).with_suffix('.cmd'))
     
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write('#!/bin/bash\n\n')
-        # Use normalized path for the target directory
+    # Handle both shell and batch script generation
+    with open(sh_path, 'w', encoding='utf-8') as sh_file, \
+         open(cmd_path, 'w', encoding='utf-8') as cmd_file:
+        
+        # Write headers
+        sh_file.write('#!/bin/bash\n\n')
+        cmd_file.write('@echo off\nREM Generated merge script for Windows\n\n')
+        
+        # Create output directory
         normalized_target = normalize_path_for_script(target_dir)
-        f.write(f'# Create output directory\nmkdir -p "{normalized_target}"\n\n')
+        _write_mkdir_command_sh(sh_file, normalized_target)
+        _write_mkdir_command_cmd(cmd_file, normalized_target)
         
         # Use GameRepository to fetch the best versions of games
         best_versions = repository.get_best_versions()
         current_game = None
         
+        # Process each game version
         for clean_name, format_ext, source_path, part_number, total_parts in best_versions:
             file_count += 1
-            # Only normalize source path for script but don't sanitize it
             source_path = normalize_path_for_script(source_path)
-            
-            # Sanitize the clean_name for directory and file names
             sanitized_name = sanitize_directory_name(clean_name)
             
             # For multi-part games, create a subdirectory
             if total_parts > 1:
                 target_subdir = os.path.join(target_dir, sanitized_name)
-                f.write(f'mkdir -p "{normalize_path_for_script(target_subdir)}"\n')
+                norm_subdir = normalize_path_for_script(target_subdir)
+                
                 if current_game != clean_name:
-                    # Add a comment for the start of a multi-part game
-                    f.write(f'\n# Multi-part game: {clean_name}\n')
-                    current_game = clean_name                # For multi-part games, preserve original disk notation
+                    # Add comments for multi-part game
+                    sh_file.write(f'\n# Multi-part game: {clean_name}\n')
+                    cmd_file.write(f'\nREM Multi-part game: {clean_name}\n')
+                    current_game = clean_name
+                    # Create subdirectory
+                    _write_mkdir_command_sh(sh_file, norm_subdir)
+                    _write_mkdir_command_cmd(cmd_file, norm_subdir)
+                
+                # For multi-part games, preserve original disk notation
                 target_file = os.path.join(sanitized_name, f"{sanitized_name} (Disk {part_number}).{format_ext}")
                 rel_path = target_file.replace('\\', '/')
 
@@ -104,20 +145,18 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
                 target_file = f"{sanitized_name}.{format_ext}"
             
             target_path = normalize_path_for_script(os.path.join(target_dir, target_file))
-            _write_copy_command(f, source_path, target_path, target_file)
+            
+            # Write copy commands
+            _write_copy_command_sh(sh_file, source_path, target_path, target_file)
+            _write_copy_command_cmd(cmd_file, source_path, target_path, target_file)
         
         # Write .m3u files for multi-disk games
         for game_name, disk_files in m3u_files.items():
-            m3u_path = os.path.join(target_dir, f"{sanitize_directory_name(game_name)}.m3u")
-            f.write(f'\n# Create {game_name} playlist\n')
-            f.write(f'echo "Generating M3U playlist for {game_name}"\n')
-            f.write(f'cat > "{normalize_path_for_script(m3u_path)}" << EOL\n')
-            # Write disk paths with labels
-            for rel_path, label in disk_files:
-                f.write(f'{rel_path}|{label}\n')
-            f.write('EOL\n')
+            m3u_path = normalize_path_for_script(os.path.join(target_dir, f"{sanitize_directory_name(game_name)}.m3u"))
+            _write_m3u_file_sh(sh_file, m3u_path, disk_files)
+            _write_m3u_file_cmd(cmd_file, m3u_path, disk_files)
     
     repository.db_manager.close()
-    print(f"Generated {output_path}")
-    print(f"Script will copy {file_count} files to the {target_dir} directory.")
+    print(f"Generated {sh_path} and {cmd_path}")
+    print(f"Scripts will copy {file_count} files to the {target_dir} directory.")
     return file_count

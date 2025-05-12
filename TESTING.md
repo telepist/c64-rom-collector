@@ -19,12 +19,21 @@ This guide explains how to run tests for the C64 ROM Collector project.
      pip install coverage
      ```
 
+## Platform Support
+
+Tests can be run on both Unix-like systems (Linux, macOS) and Windows environments:
+
+- **Unix-like systems and Git Bash**: Use `c64_manager.sh`
+- **Windows Command Prompt**: Use `c64_manager.cmd`
+
+All test commands work identically across platforms - just use the appropriate script for your environment.
+
 ## Test Output Location
 
 Test output files (databases, generated scripts, etc.) are stored in the `build/test_output` directory:
 - `build/test_output/target/`: Temporary target directory for test ROM files
 - `build/test_output/test.db`: Test database file
-- `build/test_output/merge.sh`: Generated merge script for tests
+- `build/test_output/merge.sh` or `merge.cmd`: Generated merge script for tests (platform-specific)
 
 This directory is:
 - Created automatically during test runs
@@ -42,33 +51,75 @@ Integration tests use the `build/test_output` directory for actual file operatio
 ### Using the CLI
 
 Run all tests:
+
+Unix-like systems:
 ```bash
 ./c64_manager.sh test
 ```
 
+Windows CMD:
+```cmd
+c64_manager.cmd test
+```
+
 Run only unit tests:
+
+Unix-like systems:
 ```bash
 ./c64_manager.sh test unit
 ```
 
+Windows CMD:
+```cmd
+c64_manager.cmd test unit
+```
+
 Run only integration tests:
+
+Unix-like systems:
 ```bash
 ./c64_manager.sh test integration
 ```
 
+Windows CMD:
+```cmd
+c64_manager.cmd test integration
+```
+
 Run a specific test module:
+
+Unix-like systems:
 ```bash
 ./c64_manager.sh test --test name_cleaner
 ```
 
+Windows CMD:
+```cmd
+c64_manager.cmd test --test name_cleaner
+```
+
 Generate XML test reports (requires unittest-xml-reporting package):
+
+Unix-like systems:
 ```bash
 ./c64_manager.sh test --xml
 ```
 
+Windows CMD:
+```cmd
+c64_manager.cmd test --xml
+```
+
 You can combine these options:
+
+Unix-like systems:
 ```bash
 ./c64_manager.sh test unit --test format_handler --xml
+```
+
+Windows CMD:
+```cmd
+c64_manager.cmd test unit --test format_handler --xml
 ```
 
 #### Available Test Modules

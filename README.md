@@ -12,6 +12,14 @@ This project provides a set of tools to:
 
 The system handles the complexities of C64 game naming conventions, multi-part games, and different ROM formats to build a clean, well-organized collection of Commodore 64 games.
 
+## Platform Support
+
+The tool runs on both Unix-like systems (Linux, macOS) and Windows:
+- For Unix-like systems and Git Bash: Use `c64_manager.sh`
+- For Windows Command Prompt: Use `c64_manager.cmd`
+
+All commands described below work identically on both platforms - just use the appropriate script for your environment.
+
 ## Tools Included
 
 The package provides a unified command-line interface with the following commands:
@@ -20,8 +28,14 @@ The package provides a unified command-line interface with the following command
 
 Executes the complete ROM collection management process by running the import, generate, and merge commands in sequence.
 
+Unix-like systems:
 ```bash
 ./c64_manager.sh run
+```
+
+Windows CMD:
+```cmd
+c64_manager.cmd run
 ```
 
 **Features:**
@@ -34,8 +48,14 @@ Executes the complete ROM collection management process by running the import, g
 
 Processes Commodore 64 game files from source directories and imports them into a SQLite database with normalized metadata.
 
+Unix-like systems:
 ```bash
 ./c64_manager.sh import
+```
+
+Windows CMD:
+```cmd
+c64_manager.cmd import
 ```
 
 **Features:**
@@ -52,16 +72,28 @@ Processes Commodore 64 game files from source directories and imports them into 
 
 Analyzes the imported ROM collection and creates a merge plan that identifies the best version of each game.
 
+Unix-like systems:
 ```bash
 ./c64_manager.sh generate
+```
+
+Windows CMD:
+```cmd
+c64_manager.cmd generate
 ```
 
 ### 4. `merge` Command
 
 Creates the consolidated collection by copying the best version of each game to the target directory, following format priorities and organization rules.
 
+Unix-like systems:
 ```bash
 ./c64_manager.sh merge
+```
+
+Windows CMD:
+```cmd
+c64_manager.cmd merge
 ```
 
 **Features:**
@@ -75,6 +107,16 @@ Creates the consolidated collection by copying the best version of each game to 
 ### 5. `count` Command
 
 Additional tool to verify ROM counts and collection statistics.
+
+Unix-like systems:
+```bash
+./c64_manager.sh count
+```
+
+Windows CMD:
+```cmd
+c64_manager.cmd count
+```
 
 ## Data Organization
 
@@ -162,6 +204,7 @@ The project uses the following directory structure:
   - `c64_games.db` - SQLite database with normalized game metadata
   - `merge_collection.sh` - Generated script for collection management
 - `c64_manager.sh` - Main shell script for running the manager
+- `c64_manager.cmd` - Windows Command Prompt script for running the manager
 
 ## Usage Instructions
 
@@ -172,8 +215,15 @@ The project uses the following directory structure:
    - Put your ROM files into these subdirectories
 
 2. Run the all-in-one command to process your collection:
+
+   Unix-like systems:
    ```bash
    ./c64_manager.sh run
+   ```
+
+   Windows CMD:
+   ```cmd
+   c64_manager.cmd run
    ```
 
    This command will:
@@ -190,10 +240,17 @@ If you prefer more control or need to troubleshoot, you can run each step separa
 1. Place your ROM collections in the `roms/` directory (each collection should be a separate subdirectory)
 
 2. Run the import script to scan files and create the database:
+
+   Unix-like systems:
    ```bash
    ./c64_manager.sh import
    ```
-   
+
+   Windows CMD:
+   ```cmd
+   c64_manager.cmd import
+   ```
+
    This step will:
    - Recursively scan all collections in the `roms/` directory
    - Filter out non-game files and system utilities
@@ -204,23 +261,46 @@ If you prefer more control or need to troubleshoot, you can run each step separa
 #### b. Generate and Run Collection Merge
 
 1. Generate the merge plan to identify the best versions:
+
+   Unix-like systems:
    ```bash
    ./c64_manager.sh generate
    ```
 
+   Windows CMD:
+   ```cmd
+   c64_manager.cmd generate
+   ```
+
 2. Run the merge command to create your consolidated collection:
+
+   Unix-like systems:
    ```bash
    ./c64_manager.sh merge
+   ```
+
+   Windows CMD:
+   ```cmd
+   c64_manager.cmd merge
    ```
 
 ### 3. Additional Commands
 
 You can use other commands:
-```bash
-./c64_manager.sh count    # Check ROM counts and collection statistics
-./c64_manager.sh version  # Show version information
-./c64_manager.sh help     # Show all available commands
-```
+
+   Unix-like systems:
+   ```bash
+   ./c64_manager.sh count    # Check ROM counts and collection statistics
+   ./c64_manager.sh version  # Show version information
+   ./c64_manager.sh help     # Show all available commands
+   ```
+
+   Windows CMD:
+   ```cmd
+   c64_manager.cmd count    # Check ROM counts and collection statistics
+   c64_manager.cmd version  # Show version information
+   c64_manager.cmd help     # Show all available commands
+   ```
 
 ## Notes on Collection Organization
 

@@ -2,17 +2,72 @@
 Command-line interface for the C64 ROM collector.
 """
 import argparse
-import time
 import sys
 import os
+import time
 import subprocess
+import platform
+from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.config import ROMS_DIR, DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
-from src.core.importer import import_games
-from src.core.merger import generate_merge_script, clean_target_directory
+from c64collector.config import ROMS_DIR, DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
+from c64collector.core.importer import import_games
+from c64collector.core.merger import generate_merge_script, clean_target_directory
+
+
+def detect_platform_and_shell():
+    """Detect the current platform and shell environment."""
+    os_name = platform.system().lower()
+    env_shell = os.environ.get('SHELL', '').lower()
+    
+    if os_name == 'windows':
+        if 'bash' in env_shell or 'git' in env_shell:
+            return 'bash'
+        return 'cmd'
+    return 'shell'  # Unix-like systems
+
+
+def run_merge_script(script_path, target_dir=str(TARGET_DIR)):
+    """
+    Run the merge script appropriate for the current platform.
+    """
+    script_dir = Path(script_path).parent
+    script_name = Path(script_path).stem
+
+    # Get both potential script paths
+    sh_script = script_dir / f"{script_name}.sh"
+    cmd_script = script_dir / f"{script_name}.cmd"
+
+    # Detect environment
+    shell_type = detect_platform_and_shell()
+    
+    try:
+        if shell_type == 'cmd':
+            if not cmd_script.exists():
+                raise FileNotFoundError(f"Windows batch script not found: {cmd_script}")
+            result = subprocess.run([str(cmd_script)], shell=True, check=True)
+        else:  # bash or shell
+            if not sh_script.exists():
+                raise FileNotFoundError(f"Shell script not found: {sh_script}")
+            if platform.system() != 'Windows':
+                # Make script executable on Unix-like systems
+                os.chmod(str(sh_script), 0o755)
+            if shell_type == 'bash':
+                # Git Bash on Windows or bash on Unix
+                result = subprocess.run(['bash', str(sh_script)], check=True)
+            else:
+                # Unix shell
+                result = subprocess.run([str(sh_script)], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing merge script: {e}")
+        return False
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        print("Run the 'generate' command first to create the merge script.")
+        return False
 
 
 def main():
@@ -76,30 +131,14 @@ def main():
         clean_result = clean_target_directory(args.target)
         
         if clean_result:
-            # Run the merge script
-            try:
-                script_path = os.path.abspath(args.script)
-                if os.path.exists(script_path):
-                    # Make sure the script is executable
-                    if os.name != 'nt':  # Not needed on Windows
-                        os.chmod(script_path, 0o755)
-                    
-                    print(f"Executing merge script: {script_path}")
-                    
-                    # Handle execution differently based on platform
-                    if os.name == 'nt':  # Windows
-                        result = subprocess.run(['bash', script_path], shell=True, check=True)
-                    else:  # Unix-like
-                        result = subprocess.run([script_path], shell=True, check=True)
-                    
-                    end_time = time.time()
-                    print("Merge completed successfully!")
-                    print(f"Execution time: {end_time - start_time:.2f} seconds")
-                else:
-                    print(f"Error: Merge script '{script_path}' not found.")
-                    print("Run the 'generate' command first to create the merge script.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error executing merge script: {e}")
+            # Run the appropriate merge script
+            script_path = os.path.abspath(args.script)
+            success = run_merge_script(script_path, args.target)
+            
+            if success:
+                end_time = time.time()
+                print("Merge completed successfully!")
+                print(f"Execution time: {end_time - start_time:.2f} seconds")
         else:
             print("Aborting merge due to errors while cleaning target directory.")
     
