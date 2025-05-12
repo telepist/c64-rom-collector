@@ -1,5 +1,6 @@
 # Ignore ROM collections (ROM files)
-roms/
+/roms/  # Only ignore roms in the root folder
+!/tests/**/roms/  # But keep test fixtures
 
 # Ignore the target directory with the consolidated collection
 target/

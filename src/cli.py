@@ -17,7 +17,9 @@ from src.core.merger import generate_merge_script, clean_target_directory
 
 def main():
     parser = argparse.ArgumentParser(description="C64 ROM Collection Manager")
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")    # Import command
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    
+    # Import command
     import_parser = subparsers.add_parser("import", help="Import games from ROM directories")
     import_parser.add_argument("--src", default=str(ROMS_DIR), help="ROMs directory")
     import_parser.add_argument("--db", default=str(DATABASE_PATH), help="Database path")
@@ -26,7 +28,9 @@ def main():
     generate_parser = subparsers.add_parser("generate", help="Generate merge script")
     generate_parser.add_argument("--db", default=str(DATABASE_PATH), help="Database path")
     generate_parser.add_argument("--output", default=str(MERGE_SCRIPT_PATH), help="Output script path")
-    generate_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")    # Merge command
+    generate_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")
+    
+    # Merge command
     merge_parser = subparsers.add_parser("merge", help="Merge the collection to target directory")
     merge_parser.add_argument("--target", default=str(TARGET_DIR), help="Target directory")
     merge_parser.add_argument("--script", default=str(MERGE_SCRIPT_PATH), help="Merge script to run")
@@ -35,8 +39,10 @@ def main():
     subparsers.add_parser("version", help="Show version information")
     
     # Test command
-    test_parser = subparsers.add_parser("test", help="Run unit tests")
-    test_parser.add_argument("--module", help="Run specific test module")
+    test_parser = subparsers.add_parser("test", help="Run tests")
+    test_parser.add_argument("type", nargs="?", choices=["unit", "integration"], 
+                            help="Test type to run (unit or integration). If not specified, runs both.")
+    test_parser.add_argument("--test", help="Run specific test module")
     test_parser.add_argument("--xml", action="store_true", help="Generate XML test reports")
     
     args = parser.parse_args()
@@ -63,7 +69,7 @@ def main():
     
     elif args.command == "merge":
         start_time = time.time()
-        print(f"Running merge script to create target collection...")
+        print("Running merge script to create target collection...")
         
         # Clean target directory
         print(f"Cleaning target directory '{args.target}' first...")
@@ -87,11 +93,11 @@ def main():
                         result = subprocess.run([script_path], shell=True, check=True)
                     
                     end_time = time.time()
-                    print(f"Merge completed successfully!")
+                    print("Merge completed successfully!")
                     print(f"Execution time: {end_time - start_time:.2f} seconds")
                 else:
                     print(f"Error: Merge script '{script_path}' not found.")
-                    print(f"Run the 'generate' command first to create the merge script.")
+                    print("Run the 'generate' command first to create the merge script.")
             except subprocess.CalledProcessError as e:
                 print(f"Error executing merge script: {e}")
         else:
@@ -101,15 +107,22 @@ def main():
         print("C64 ROM Collection Manager v1.0.0")
     
     elif args.command == "test":
-        print("Running unit tests...")
         from tests.run_tests import run_tests
         
         class TestArgs:
-            def __init__(self, module=None, xml=False):
+            def __init__(self, test_type=None, module=None, xml=False):
+                self.type = test_type  # Can be "unit", "integration", or None (for both)
                 self.test = module
                 self.xml = xml
         
-        test_args = TestArgs(args.module, args.xml)
+        if args.type == "unit":
+            print("Running unit tests...")
+        elif args.type == "integration":
+            print("Running integration tests...")
+        else:
+            print("Running all tests...")
+        
+        test_args = TestArgs(args.type, args.test, args.xml)
         sys.exit(run_tests(test_args))
     
     else:

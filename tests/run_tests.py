@@ -12,34 +12,83 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def run_tests(args=None):
     """Run the test suite with specified options."""
-    # Discover tests
     test_loader = unittest.TestLoader()
+    test_suite = unittest.TestSuite()
+    test_base = Path(__file__).parent
+    found_tests = False
     
-    if args and args.test:
+    def is_running_all_tests():
+        return args is None or not hasattr(args, 'type') or not args.type
+        
+    def is_running_test_type(test_type):
+        return is_running_all_tests() or \
+               (hasattr(args, 'type') and args.type == test_type)
+    
+    if args and hasattr(args, 'test') and args.test:
         # Run specific test module
         module_name = args.test
         if not module_name.startswith('test_'):
             module_name = f'test_{module_name}'
-          # Look for test file in unit directory (flat structure)
-        test_file = Path(__file__).parent / 'unit' / f'{module_name}.py'
-        if not test_file.exists():
-            print(f"Error: Test module '{module_name}' not found.")
-            return 1
+        module_pattern = f'{module_name}.py'
+        
+        # Check test directories based on type
+        test_dirs = []
+        if is_running_test_type("unit"):
+            test_dirs.append('unit')
+        if is_running_test_type("integration"):
+            test_dirs.append('integration')
             
-        test_suite = test_loader.discover(str(Path(__file__).parent / 'unit'),
-                                          pattern=f'{module_name}.py',
-                                          top_level_dir=str(Path(__file__).parent))
+        for test_dir in test_dirs:
+            path = test_base / test_dir / module_pattern
+            if path.exists():
+                suite = test_loader.discover(
+                    str(path.parent),
+                    pattern=module_pattern,
+                    top_level_dir=str(test_base)
+                )
+                test_suite.addTests(suite)
+                found_tests = True
+                
+        if not found_tests:
+            test_type = f" in {args.type} tests" if hasattr(args, 'type') and args.type else ""
+            print(f"Error: Test module '{module_name}' not found{test_type}.")
+            return 1
     else:
-        # Run all tests recursively
-        test_suite = test_loader.discover(str(Path(__file__).parent / 'unit'), 
-                                          pattern='test_*.py',
-                                          top_level_dir=str(Path(__file__).parent))
+        # Run all tests of specified type
+        if is_running_test_type("unit"):
+            unit_dir = test_base / 'unit'
+            if unit_dir.exists():
+                unit_tests = test_loader.discover(
+                    str(unit_dir),
+                    pattern='test_*.py',
+                    top_level_dir=str(test_base)
+                )
+                test_suite.addTests(unit_tests)
+                found_tests = True
+            
+        if is_running_test_type("integration"):
+            int_dir = test_base / 'integration'
+            if int_dir.exists():
+                integration_tests = test_loader.discover(
+                    str(int_dir),
+                    pattern='test_*.py',
+                    top_level_dir=str(test_base)
+                )
+                test_suite.addTests(integration_tests)
+                found_tests = True
+        
+        if not found_tests:
+            test_type = "unit" if hasattr(args, 'type') and args.type == "unit" else \
+                       "integration" if hasattr(args, 'type') and args.type == "integration" else \
+                       "unit or integration"
+            print(f"No {test_type} tests found.")
+            return 1
     
     # Set up the test runner
     runner_class = unittest.TextTestRunner
     runner_kwargs = {'verbosity': 2}
     
-    if args and getattr(args, 'xml', False):
+    if args and hasattr(args, 'xml') and args.xml:
         try:
             import xmlrunner
             runner_class = xmlrunner.XMLTestRunner

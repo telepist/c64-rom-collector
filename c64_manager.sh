@@ -63,11 +63,13 @@ case "$1" in
         python -m src.cli version
         ;;
     test)
-        echo "Running unit tests..."
-        if [ -n "$2" ]; then
-            python -m src.cli test --module "$2"
+        # Handle test type and optional arguments
+        if [ "$2" = "unit" ] || [ "$2" = "integration" ]; then
+            echo "Running $2 tests..."
+            python -m src.cli test "$2" "${@:3}"
         else
-            python -m src.cli test
+            echo "Running all tests..."
+            python -m src.cli test "${@:2}"
         fi
         ;;
     help)
