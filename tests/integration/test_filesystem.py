@@ -57,7 +57,7 @@ class TestFilesystemIntegration(unittest.TestCase):
             self.assertEqual(content.strip(), expected_content.encode(), 
                            f"Wrong content for {game_name}")
             
-            print(f"✓ {game_name}: {expected_region} region selected")
+            print(f"[OK] {game_name}: {expected_region} region selected")
     
     def test_filesystem_format_priority(self):
         """Test format priority using real filesystem fixtures."""
@@ -81,7 +81,7 @@ class TestFilesystemIntegration(unittest.TestCase):
             self.assertEqual(content.strip(), expected_content.encode(),
                            f"Wrong content for {game_name}")
             
-            print(f"✓ {game_name}: {expected_format} format selected")
+            print(f"[OK] {game_name}: {expected_format} format selected")
     
     def test_filesystem_multidisk_games(self):
         """Test multi-disk game handling using real filesystem fixtures."""
@@ -123,7 +123,7 @@ class TestFilesystemIntegration(unittest.TestCase):
             self.assertTrue(any(word in content_str for word in [game_name.split()[0], "disk", "content"]),
                            f"Unexpected content in first disk of {game_name}: {content_str}")
             
-            print(f"✓ {game_name}: {game_info['parts']} parts with M3U playlist")
+            print(f"[OK] {game_name}: {game_info['parts']} parts with M3U playlist")
     
     def test_filesystem_collection_priority(self):
         """Test collection priority using real filesystem fixtures."""
@@ -144,7 +144,7 @@ class TestFilesystemIntegration(unittest.TestCase):
             self.assertEqual(content.strip(), expected_content.encode(),
                            f"Wrong collection selected for {game_name}")
             
-            print(f"✓ {game_name}: {expected_collection} collection selected")
+            print(f"[OK] {game_name}: {expected_collection} collection selected")
     
     def test_filesystem_edge_cases(self):
         """Test edge cases using real filesystem fixtures."""
@@ -165,7 +165,7 @@ class TestFilesystemIntegration(unittest.TestCase):
             self.assertEqual(content.strip(), expected_content.encode(),
                            f"Wrong content for edge case {game_name}")
             
-            print(f"✓ {game_name}: edge case handled correctly")
+            print(f"[OK] {game_name}: edge case handled correctly")
     
     def test_filesystem_skipped_files(self):
         """Test that certain files are properly skipped using real filesystem fixtures."""
@@ -195,7 +195,7 @@ class TestFilesystemIntegration(unittest.TestCase):
                 self.assertEqual(count, 0, f"Skipped file {skipped_file} found in database")
         finally:
             db.close()
-        print(f"✓ {len(self.expected['skipped_files'])} file types properly skipped")
+        print(f"[OK] {len(self.expected['skipped_files'])} file types properly skipped")
     
     def test_filesystem_comprehensive_stats(self):
         """Test that import statistics are accurate using real filesystem fixtures."""
@@ -270,7 +270,7 @@ class TestFilesystemIntegration(unittest.TestCase):
         self.assertGreater(len(target_dirs), 0, "No multi-disk games found")
         self.assertGreater(len(m3u_files), 0, "No M3U playlists created")
         
-        print("\\n✅ Complete workflow test passed!")
+        print("\n[SUCCESS] Complete workflow test passed!")
     
     def _execute_script(self, script_path):
         """Execute the generated script to create target files."""
