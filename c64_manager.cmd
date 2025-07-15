@@ -17,7 +17,7 @@ if "%1"=="" (
     echo   run        - Execute import, generate, and merge commands in sequence
     echo   count      - Run the check_counts.py script for additional verification
     echo   version    - Show version information
-    echo   test       - Run unit tests
+    echo   test       - Run tests using pytest (supports 'unit' or 'integration' as second argument)
     echo   help       - Display this help message
     echo.
     echo Note: Multi-part games are automatically organized into subdirectories.
@@ -56,13 +56,16 @@ if "%1"=="import" (
 ) else if "%1"=="test" (
     if "%2"=="unit" (
         echo Running unit tests...
-        python -m src.cli test unit %3 %4 %5
+        set PYTHONPATH=src
+        python -m pytest tests/unit/ -v %3 %4 %5
     ) else if "%2"=="integration" (
         echo Running integration tests...
-        python -m src.cli test integration %3 %4 %5
+        set PYTHONPATH=src
+        python -m pytest tests/integration/ -v %3 %4 %5
     ) else (
         echo Running all tests...
-        python -m src.cli test %2 %3 %4
+        set PYTHONPATH=src
+        python -m pytest tests/ -v %2 %3 %4
     )
 ) else if "%1"=="help" (
     goto :show_help

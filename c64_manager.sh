@@ -45,7 +45,7 @@ show_help() {
     echo "  run        - Execute import, generate, and merge commands in sequence"
     echo "  count      - Run the check_counts.py script for additional verification"
     echo "  version    - Show version information"
-    echo "  test       - Run unit tests"
+    echo "  test       - Run tests using pytest (supports 'unit' or 'integration' as second argument)"
     echo "  help       - Display this help message"
     echo ""
     echo "Note: Multi-part games are automatically organized into subdirectories."
@@ -96,12 +96,15 @@ case "$1" in
         ;;
     test)
         # Handle test type and optional arguments
-        if [ "$2" = "unit" ] || [ "$2" = "integration" ]; then
-            echo "Running $2 tests..."
-            cd src && $PYTHON_CMD cli.py test "$2" "${@:3}"
+        if [ "$2" = "unit" ]; then
+            echo "Running unit tests..."
+            PYTHONPATH=src $PYTHON_CMD -m pytest tests/unit/ -v "${@:3}"
+        elif [ "$2" = "integration" ]; then
+            echo "Running integration tests..."
+            PYTHONPATH=src $PYTHON_CMD -m pytest tests/integration/ -v "${@:3}"
         else
             echo "Running all tests..."
-            cd src && $PYTHON_CMD cli.py test "${@:2}"
+            PYTHONPATH=src $PYTHON_CMD -m pytest tests/ -v "${@:2}"
         fi
         ;;
     help)
