@@ -6,10 +6,13 @@ All paths are handled in a platform-independent way using pathlib.Path.
 """
 from pathlib import Path
 
-# Directory paths
-BUILD_DIR = Path("build")
-ROMS_DIR = Path("roms")
-TARGET_DIR = Path("target")
+# Get the project root directory (parent of src)
+PROJECT_ROOT = Path(__file__).parent.parent
+
+# Directory paths (absolute paths relative to project root)
+BUILD_DIR = PROJECT_ROOT / "build"
+ROMS_DIR = PROJECT_ROOT / "roms"
+TARGET_DIR = PROJECT_ROOT / "target"
 
 # File paths
 DATABASE_PATH = BUILD_DIR / "c64_games.db"
