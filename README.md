@@ -315,6 +315,44 @@ The system ensures that games are properly organized by:
 - Maintaining format consistency within game sets
 - Tracking all versions and relationships in the database
 
+## Development Environment
+
+### VS Code Configuration
+
+The project includes VS Code configuration files for improved development experience:
+
+- **`.vscode/settings.json`**: Configures Python analysis paths and linting settings
+- **`.vscode/launch.json`**: Provides debug configurations for running tests and CLI commands
+- **`.vscode/tasks.json`**: Defines tasks for running tests and build operations
+- **`pyrightconfig.json`**: Configures Pylance for proper import resolution
+- **`.env`**: Sets PYTHONPATH for consistent import resolution
+
+These configurations ensure that:
+- Import statements are properly resolved by Pylance
+- Tests can be run and debugged from VS Code
+- The project structure is properly understood by the editor
+
+If you're using VS Code, you may need to reload the window (Ctrl+Shift+P → "Developer: Reload Window") after opening the project for the first time to apply the Python path configuration.
+
+### Running Tests
+
+The project includes comprehensive test suites:
+
+**All tests:**
+```bash
+./c64_manager.sh test
+```
+
+**Integration tests only:**
+```bash
+PYTHONPATH=src python -m pytest tests/integration/ -v
+```
+
+**Unit tests only:**
+```bash
+PYTHONPATH=src python -m pytest tests/unit/ -v
+```
+
 ## Requirements
 
 - Python 3.6 or higher
