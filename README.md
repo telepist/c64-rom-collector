@@ -345,13 +345,25 @@ The project includes comprehensive test suites:
 
 **Integration tests only:**
 ```bash
-PYTHONPATH=src python -m pytest tests/integration/ -v
+./c64_manager.sh test tests/integration/
 ```
 
 **Unit tests only:**
 ```bash
-PYTHONPATH=src python -m pytest tests/unit/ -v
+./c64_manager.sh test tests/unit/
 ```
+
+**Specific test file:**
+```bash
+./c64_manager.sh test tests/unit/test_database.py
+```
+
+**Specific test method:**
+```bash
+./c64_manager.sh test tests/unit/test_database.py::TestDatabaseManager::test_insert_game
+```
+
+For Windows Command Prompt, use `c64_manager.cmd` instead of `./c64_manager.sh`.
 
 ## Requirements
 
