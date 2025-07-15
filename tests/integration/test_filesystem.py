@@ -6,6 +6,7 @@ from pathlib import Path
 from core.importer import import_games
 from core.merger import generate_merge_script
 from files.operations import read_file
+from db.database import DatabaseManager
 from .fixtures.fixture_creator import get_expected_results
 
 
@@ -183,7 +184,6 @@ class TestFilesystemIntegration(unittest.TestCase):
                            f"Skipped file {skipped_file} found in target")
         
         # Verify skipped files are not in the database
-        from db.database import DatabaseManager
         db = DatabaseManager(str(self.db_path))
         db.connect()
         

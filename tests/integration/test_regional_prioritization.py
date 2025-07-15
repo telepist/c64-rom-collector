@@ -9,6 +9,8 @@ import os
 from core.importer import import_games
 from core.merger import generate_merge_script
 from files.operations import read_file
+from db.database import DatabaseManager
+from db.game_repository import GameRepository
 from config import DATABASE_PATH, MERGE_SCRIPT_PATH, TARGET_DIR
 
 
@@ -102,9 +104,6 @@ class TestRegionalPrioritization(unittest.TestCase):
         import_games(str(self.roms_dir), str(self.db_path))
         
         # Check database content directly
-        from db.database import DatabaseManager
-        from db.game_repository import GameRepository
-        
         db = DatabaseManager(str(self.db_path))
         db.connect()
         
@@ -142,9 +141,6 @@ class TestRegionalPrioritization(unittest.TestCase):
         import_games(str(self.roms_dir), str(self.db_path))
         
         # Check database content directly
-        from db.database import DatabaseManager
-        from db.game_repository import GameRepository
-        
         db = DatabaseManager(str(self.db_path))
         db.connect()
         
