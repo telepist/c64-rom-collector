@@ -1,0 +1,26 @@
+{
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "pythonPath": "python",
+            "extraPaths": [
+                "./src"
+            ]
+        }
+    ],
+    "typeCheckingMode": "basic",
+    "reportMissingImports": "warning",
+    "reportMissingTypeStubs": false,
+    "include": [
+        "src",
+        "tests"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        "**/.pytest_cache",
+        "**/node_modules",
+        "build",
+        "target",
+        "roms"
+    ]
+}
