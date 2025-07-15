@@ -122,11 +122,12 @@ def main():
     
     elif args.command == "merge":
         start_time = time.time()
-        print("Running merge script to create target collection...")
         
         # Clean target directory
         print(f"Cleaning target directory '{args.target}' first...")
         clean_result = clean_target_directory(args.target)
+
+        print("Running merge script to create target collection...")
         
         if clean_result:
             # Run the appropriate merge script

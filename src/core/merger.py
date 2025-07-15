@@ -104,7 +104,7 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
         cmd_file.write('@echo off\nREM Generated merge script for Windows\n\n')
         
         # Create output directory
-        normalized_target = normalize_path_for_script(target_dir)
+        normalized_target = normalize_path_for_script(str(target_dir))
         _write_mkdir_command_sh(sh_file, normalized_target)
         _write_mkdir_command_cmd(cmd_file, normalized_target)
         
@@ -120,7 +120,7 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
             
             # For multi-part games, create a subdirectory
             if total_parts > 1:
-                target_subdir = os.path.join(target_dir, sanitized_name)
+                target_subdir = os.path.join(str(target_dir), sanitized_name)
                 norm_subdir = normalize_path_for_script(target_subdir)
                 
                 if current_game != clean_name:
@@ -144,7 +144,7 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
                 # Single file game
                 target_file = f"{sanitized_name}.{format_ext}"
             
-            target_path = normalize_path_for_script(os.path.join(target_dir, target_file))
+            target_path = normalize_path_for_script(os.path.join(str(target_dir), target_file))
             
             # Write copy commands
             _write_copy_command_sh(sh_file, source_path, target_path, target_file)
@@ -152,7 +152,7 @@ def generate_merge_script(db_path=DATABASE_PATH, output_path=MERGE_SCRIPT_PATH, 
         
         # Write .m3u files for multi-disk games
         for game_name, disk_files in m3u_files.items():
-            m3u_path = normalize_path_for_script(os.path.join(target_dir, f"{sanitize_directory_name(game_name)}.m3u"))
+            m3u_path = normalize_path_for_script(os.path.join(str(target_dir), f"{sanitize_directory_name(game_name)}.m3u"))
             _write_m3u_file_sh(sh_file, m3u_path, disk_files)
             _write_m3u_file_cmd(cmd_file, m3u_path, disk_files)
     

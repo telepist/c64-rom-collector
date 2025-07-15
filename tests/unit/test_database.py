@@ -179,7 +179,7 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertEqual(parts[1][0], 2)
         
     def test_insert_duplicate_version(self):
-        """Test inserting the same game version twice"""
+        """Test inserting the exact same game version twice (same path and original name)"""
         self.repository.db_manager.create_schema()
         
         # First insert
@@ -194,21 +194,57 @@ class TestDatabaseManager(unittest.TestCase):
         }
         game_id1, version_id1, part_id1 = self.repository.insert_game(game_data1)
         
-        # Second insert (same game, same collection and format)
+        # Second insert (exact same data)
         game_data2 = dict(game_data1)
-        game_data2['source_path'] = 'path2/game.crt'
         game_id2, version_id2, part_id2 = self.repository.insert_game(game_data2)
         
-        # Should use same game and version
+        # Should use same game, version, and part
         self.assertEqual(game_id1, game_id2)
         self.assertEqual(version_id1, version_id2)
-        self.assertNotEqual(part_id1, part_id2)
+        self.assertEqual(part_id1, part_id2)  # Same part since it's identical
         
-        # Check we have one game, one version, but two parts
+        # Check we have one game, one version, one part
         self.repository.db_manager.execute("SELECT COUNT(*) FROM games")
         self.assertEqual(self.repository.db_manager.fetchone()[0], 1)
         self.repository.db_manager.execute("SELECT COUNT(*) FROM game_versions")
         self.assertEqual(self.repository.db_manager.fetchone()[0], 1)
+        self.repository.db_manager.execute("SELECT COUNT(*) FROM game_parts")
+        self.assertEqual(self.repository.db_manager.fetchone()[0], 1)
+        
+    def test_insert_different_original_names(self):
+        """Test inserting games with different original names creates separate versions"""
+        self.repository.db_manager.create_schema()
+        
+        # First insert
+        game_data1 = {
+            'source_path': 'path1/game.crt',
+            'original_name': 'Game.crt',
+            'clean_name': 'Game',
+            'format': 'crt',
+            'collection': 'Collection1',
+            'format_priority': 3,
+            'part_number': 0
+        }
+        game_id1, version_id1, part_id1 = self.repository.insert_game(game_data1)
+        
+        # Second insert (same game, same collection and format, but different original name)
+        game_data2 = dict(game_data1)
+        game_data2.update({
+            'source_path': 'path2/game_alt.crt',
+            'original_name': 'Game (Alt).crt'  # Different original name
+        })
+        game_id2, version_id2, part_id2 = self.repository.insert_game(game_data2)
+        
+        # Should use same game but different versions
+        self.assertEqual(game_id1, game_id2)
+        self.assertNotEqual(version_id1, version_id2)
+        self.assertNotEqual(part_id1, part_id2)
+        
+        # Check we have one game, two versions, two parts
+        self.repository.db_manager.execute("SELECT COUNT(*) FROM games")
+        self.assertEqual(self.repository.db_manager.fetchone()[0], 1)
+        self.repository.db_manager.execute("SELECT COUNT(*) FROM game_versions")
+        self.assertEqual(self.repository.db_manager.fetchone()[0], 2)
         self.repository.db_manager.execute("SELECT COUNT(*) FROM game_parts")
         self.assertEqual(self.repository.db_manager.fetchone()[0], 2)
         
@@ -277,6 +313,72 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertEqual(results[2][0], 'Game2')  # clean_name
         self.assertEqual(results[2][1], 'd64')    # format
         self.assertEqual(results[2][3], 2)        # part_number
+
+    def test_alternative_versions_are_separate(self):
+        """Test that alternative versions (e.g., Alt, Alternative) are treated as separate versions."""
+        self.repository.db_manager.create_schema()
+        
+        # Insert regular version
+        game_data_regular = {
+            'source_path': 'path/to/addictaball.nib',
+            'original_name': 'Addictaball (USA, Europe).nib',
+            'clean_name': 'Addictaball',
+            'format': 'nib',
+            'collection': 'No-Intro',
+            'format_priority': 2,
+            'region': 'USA, Europe',
+            'region_priority': 6,
+            'part_number': 0
+        }
+        game_id1, version_id1, part_id1 = self.repository.insert_game(game_data_regular)
+        
+        # Insert alternative version
+        game_data_alt = {
+            'source_path': 'path/to/addictaball_alt.nib',
+            'original_name': 'Addictaball (USA, Europe) (Alt).nib',
+            'clean_name': 'Addictaball',
+            'format': 'nib',
+            'collection': 'No-Intro',
+            'format_priority': 2,
+            'region': 'USA, Europe',
+            'region_priority': 6,
+            'part_number': 0
+        }
+        game_id2, version_id2, part_id2 = self.repository.insert_game(game_data_alt)
+        
+        # Should be the same game but different versions
+        self.assertEqual(game_id1, game_id2)
+        self.assertNotEqual(version_id1, version_id2)
+        self.assertNotEqual(part_id1, part_id2)
+        
+        # Check we have one game, two versions, two parts
+        self.repository.db_manager.execute("SELECT COUNT(*) FROM games")
+        self.assertEqual(self.repository.db_manager.fetchone()[0], 1)
+        self.repository.db_manager.execute("SELECT COUNT(*) FROM game_versions")
+        self.assertEqual(self.repository.db_manager.fetchone()[0], 2)
+        self.repository.db_manager.execute("SELECT COUNT(*) FROM game_parts")
+        self.assertEqual(self.repository.db_manager.fetchone()[0], 2)
+        
+        # Each version should have exactly one part with part_number 0
+        self.repository.db_manager.execute("""
+            SELECT version_id, part_number, COUNT(*) as count
+            FROM game_parts 
+            GROUP BY version_id, part_number
+            ORDER BY version_id
+        """)
+        part_counts = self.repository.db_manager.fetchall()
+        self.assertEqual(len(part_counts), 2)
+        self.assertEqual(part_counts[0][1], 0)  # part_number = 0
+        self.assertEqual(part_counts[0][2], 1)  # count = 1
+        self.assertEqual(part_counts[1][1], 0)  # part_number = 0
+        self.assertEqual(part_counts[1][2], 1)  # count = 1
+        
+        # get_best_versions should return only one version (the first one inserted)
+        best_versions = list(self.repository.get_best_versions())
+        addictaball_results = [r for r in best_versions if r[0] == 'Addictaball']
+        self.assertEqual(len(addictaball_results), 1)
+        self.assertEqual(addictaball_results[0][3], 0)  # part_number = 0
+        self.assertEqual(addictaball_results[0][4], 1)  # total_parts = 1
 
 
 if __name__ == '__main__':

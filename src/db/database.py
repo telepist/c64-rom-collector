@@ -133,6 +133,41 @@ class DatabaseManager:
         version_row = self.fetchone()
         if version_row:
             version_id = version_row[0]
+            
+            # Check if this exact part already exists
+            self.execute('''
+                SELECT id FROM game_parts 
+                WHERE version_id = ? AND part_number = ? AND source_path = ?
+            ''', (version_id, game_data['part_number'], game_data['source_path']))
+            
+            existing_part = self.fetchone()
+            if existing_part:
+                # Part already exists, return the existing IDs
+                return game_id, version_id, existing_part[0]
+            
+            # Check if a different part with same part_number already exists
+            self.execute('''
+                SELECT id, source_path FROM game_parts 
+                WHERE version_id = ? AND part_number = ?
+            ''', (version_id, game_data['part_number']))
+            
+            existing_part_same_number = self.fetchone()
+            if existing_part_same_number:
+                # This is a different file with same part number (e.g., Alt version)
+                # Create a new version for this file
+                self.execute('''
+                    INSERT INTO game_versions (
+                        game_id, collection, format, format_priority, region, region_priority
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    game_id,
+                    game_data['collection'],
+                    game_data['format'],
+                    game_data['format_priority'],
+                    game_data.get('region', ''),
+                    game_data.get('region_priority', 0)
+                ))
+                version_id = self.cursor.lastrowid
         else:
             # Insert new version
             self.execute('''

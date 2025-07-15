@@ -188,6 +188,61 @@ class TestMerger(unittest.TestCase):
         self.assertTrue(m3u_lines[0].endswith('|Disk 1'), "First entry should be Disk 1")
         self.assertTrue(m3u_lines[1].endswith('|Disk 2'), "Second entry should be Disk 2")
 
+    def test_alternative_versions_no_duplicate_m3u(self):
+        """Test that alternative versions don't create duplicate M3U entries."""
+        # Create a separate database for this test
+        conn = sqlite3.connect(self.temp_db_path)
+        cursor = conn.cursor()
+        
+        # Clear existing data
+        cursor.execute('DELETE FROM game_parts')
+        cursor.execute('DELETE FROM game_versions')
+        cursor.execute('DELETE FROM games')
+        
+        # Insert a game with regular and alternative versions
+        cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Addictaball',))
+        game_id = cursor.lastrowid
+        
+        # Insert regular version
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority, region, region_priority) 
+                         VALUES (?, ?, ?, ?, ?, ?)''', (game_id, 'No-Intro', 'nib', 2, 'USA, Europe', 6))
+        version1_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version1_id, 0, 'src/No-Intro/Addictaball (USA, Europe).nib', 'Addictaball (USA, Europe).nib'))
+        
+        # Insert alternative version
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority, region, region_priority) 
+                         VALUES (?, ?, ?, ?, ?, ?)''', (game_id, 'No-Intro', 'nib', 2, 'USA, Europe', 6))
+        version2_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
+                         VALUES (?, ?, ?, ?)''', 
+                         (version2_id, 0, 'src/No-Intro/Addictaball (USA, Europe) (Alt).nib', 'Addictaball (USA, Europe) (Alt).nib'))
+        
+        conn.commit()
+        conn.close()
+        
+        # Run the merge script generation
+        file_count = generate_merge_script(self.temp_db_path, self.temp_script_path, self.target_dir)
+        
+        # Should only process 1 file (the best version)
+        self.assertEqual(file_count, 1)
+        
+        # Check script content
+        with open(self.temp_script_path, 'r') as f:
+            content = f.read()
+        
+        # Should copy only the best version (regular, not Alt)
+        self.assertIn('cp "src/No-Intro/Addictaball (USA, Europe).nib" "test_target/Addictaball.nib"', content)
+        self.assertNotIn('cp "src/No-Intro/Addictaball (USA, Europe) (Alt).nib"', content)
+        
+        # Should not create any M3U files for single-disk games
+        self.assertNotIn('cat > "test_target/Addictaball.m3u"', content)
+        self.assertNotIn('Addictaball.m3u', content)
+        
+        # Should not create any subdirectories for single-disk games
+        self.assertNotIn('mkdir -p "test_target/Addictaball"', content)
+
 
 if __name__ == '__main__':
     unittest.main()

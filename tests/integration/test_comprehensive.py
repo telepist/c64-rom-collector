@@ -184,6 +184,46 @@ class TestComprehensiveIntegration(unittest.TestCase):
         print(f"  Processed files: {stats['processed_files']}")
         print(f"  Unique games: {stats['unique_games']}")
         print(f"  Skipped files: {stats.get('skipped_files', 0)}")
+
+    def test_alternative_versions_no_duplicate_m3u(self):
+        """Test that alternative versions don't create duplicate M3U entries."""
+        # Import games
+        import_games(str(self.roms_dir), str(self.db_path))
+        
+        # Generate merge script
+        generate_merge_script(str(self.db_path), str(self.script_path), str(self.target_dir))
+        self._execute_script(str(self.script_path))
+        
+        # Look for any games with "Alt" in the fixtures
+        alt_games = []
+        for collection_dir in self.collection_dirs:
+            collection_path = Path(collection_dir)
+            for file_path in collection_path.rglob("*"):
+                if file_path.is_file() and "(Alt)" in file_path.name:
+                    import sys
+                    import os
+                    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+                    from utils.name_cleaner import clean_name
+                    clean_game_name = clean_name(file_path.name)
+                    alt_games.append(clean_game_name)
+        
+        # For each game that has an Alt version, verify no M3U file exists
+        # (since they should be single-disk games)
+        for game_name in alt_games:
+            m3u_file = self.target_dir / f"{game_name}.m3u"
+            self.assertFalse(m3u_file.exists(), 
+                           f"M3U file {game_name}.m3u should not exist for single-disk game with Alt version")
+            
+            # Verify only one target file exists (the best version)
+            target_files = list(self.target_dir.glob(f"{game_name}.*"))
+            target_files = [f for f in target_files if not f.name.endswith('.m3u')]
+            self.assertEqual(len(target_files), 1, 
+                           f"Expected exactly one file for {game_name}, got {len(target_files)}")
+            
+            # Verify no subdirectory exists for single-disk games
+            game_dir = self.target_dir / game_name
+            self.assertFalse(game_dir.exists(), 
+                           f"Directory {game_name} should not exist for single-disk game")
     
     def _execute_script(self, script_path):
         """Execute the generated script to create target files."""
