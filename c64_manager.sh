@@ -60,24 +60,28 @@ fi
 case "$1" in
     import)
         echo "Importing games from source collections (will clear existing database)..."
-        cd src && $PYTHON_CMD cli.py import
+        BASEDIR="$(pwd)"
+        cd src && $PYTHON_CMD cli.py import --src "$BASEDIR/roms"
         ;;
     generate)
         echo "Generating merge script..."
-        cd src && $PYTHON_CMD cli.py generate
+        BASEDIR="$(pwd)"
+        cd src && $PYTHON_CMD cli.py generate --target "$BASEDIR/target"
         ;;
     merge)
         echo "Running merge script to create target collection..."
-        cd src && $PYTHON_CMD cli.py merge
+        BASEDIR="$(pwd)"
+        cd src && $PYTHON_CMD cli.py merge --target "$BASEDIR/target"
         ;;
     run)
         echo "Running complete workflow: import, generate, and merge..."
         echo "Step 1/3: Importing games from source collections..."
-        cd src && $PYTHON_CMD cli.py import || exit 1
+        BASEDIR="$(pwd)"
+        cd src && $PYTHON_CMD cli.py import --src "$BASEDIR/roms" || exit 1
         echo "Step 2/3: Generating merge script..."
-        $PYTHON_CMD cli.py generate || exit 1
+        $PYTHON_CMD cli.py generate --target "$BASEDIR/target" || exit 1
         echo "Step 3/3: Running merge script to create target collection..."
-        $PYTHON_CMD cli.py merge || exit 1
+        $PYTHON_CMD cli.py merge --target "$BASEDIR/target" || exit 1
         echo "Complete workflow finished successfully!"
         ;;
     count)
