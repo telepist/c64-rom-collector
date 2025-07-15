@@ -70,6 +70,8 @@ class DatabaseManager:
             collection TEXT NOT NULL,
             format TEXT NOT NULL,
             format_priority INTEGER NOT NULL DEFAULT 0,
+            region TEXT DEFAULT '',
+            region_priority INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (game_id) REFERENCES games(id)
         )''')
 
@@ -89,6 +91,7 @@ class DatabaseManager:
         self.execute('CREATE INDEX IF NOT EXISTS idx_versions_format ON game_versions (format)')
         self.execute('CREATE INDEX IF NOT EXISTS idx_versions_collection ON game_versions (collection)')
         self.execute('CREATE INDEX IF NOT EXISTS idx_versions_format_priority ON game_versions (format_priority)')
+        self.execute('CREATE INDEX IF NOT EXISTS idx_versions_region_priority ON game_versions (region_priority)')
         self.execute('CREATE INDEX IF NOT EXISTS idx_parts_version_id ON game_parts (version_id)')
         self.execute('CREATE INDEX IF NOT EXISTS idx_parts_part_number ON game_parts (part_number)')
         
@@ -121,11 +124,11 @@ class DatabaseManager:
         self.execute('SELECT id FROM games WHERE clean_name = ?', (game_data['clean_name'],))
         game_id = self.fetchone()[0]
         
-        # Check if a version already exists for this game in this collection with this format
+        # Check if a version already exists for this game in this collection with this format and region
         self.execute('''
             SELECT id FROM game_versions 
-            WHERE game_id = ? AND collection = ? AND format = ?
-        ''', (game_id, game_data['collection'], game_data['format']))
+            WHERE game_id = ? AND collection = ? AND format = ? AND region = ?
+        ''', (game_id, game_data['collection'], game_data['format'], game_data.get('region', '')))
         
         version_row = self.fetchone()
         if version_row:
@@ -134,13 +137,15 @@ class DatabaseManager:
             # Insert new version
             self.execute('''
                 INSERT INTO game_versions (
-                    game_id, collection, format, format_priority
-                ) VALUES (?, ?, ?, ?)
+                    game_id, collection, format, format_priority, region, region_priority
+                ) VALUES (?, ?, ?, ?, ?, ?)
             ''', (
                 game_id,
                 game_data['collection'],
                 game_data['format'],
-                game_data['format_priority']
+                game_data['format_priority'],
+                game_data.get('region', ''),
+                game_data.get('region_priority', 0)
             ))
             version_id = self.cursor.lastrowid
         

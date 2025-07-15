@@ -5,22 +5,24 @@
 
 # Find the appropriate Python command
 get_python_cmd() {
-    # Check for python3 first (common on Unix systems)
-    if command -v python3 &> /dev/null; then
-        echo "python3"
-        return
-    fi
-    # Check for py launcher (Windows)
+    # Check for py launcher (Windows) first
     if command -v py &> /dev/null; then
-        echo "py -3"
-        return
+        if py --version 2>&1 | grep -q "Python 3"; then
+            echo "py"
+            return
+        fi
     fi
-    # Fall back to python if it's available and is Python 3
+    # Check for python if it's available and is Python 3
     if command -v python &> /dev/null; then
         if python --version 2>&1 | grep -q "Python 3"; then
             echo "python"
             return
         fi
+    fi
+    # Check for python3 (common on Unix systems)
+    if command -v python3 &> /dev/null; then
+        echo "python3"
+        return
     fi
     echo "Error: Python 3 not found" >&2
     exit 1

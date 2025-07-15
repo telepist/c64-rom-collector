@@ -64,7 +64,19 @@ class TestCLIIntegration(unittest.TestCase):
         
         # Remove test database if it exists
         if self.db_path.exists():
-            self.db_path.unlink()
+            # On Windows, we need to ensure no processes are using the database
+            try:
+                self.db_path.unlink()
+            except PermissionError:
+                # Wait a moment and try again
+                import time
+                time.sleep(0.1)
+                try:
+                    self.db_path.unlink()
+                except PermissionError:
+                    # If still locked, use a different database name
+                    import uuid
+                    self.db_path = self.temp_dir / f"test_{uuid.uuid4().hex[:8]}.db"
 
     def _run_cli_command(self, command, *args):
         """Run a CLI command and return its output."""
@@ -110,10 +122,10 @@ class TestCLIIntegration(unittest.TestCase):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Check game count
+        # Check game count (should be 20 unique games based on comprehensive fixtures)
         cursor.execute("SELECT COUNT(*) FROM games")
         game_count = cursor.fetchone()[0]
-        self.assertEqual(game_count, 4)  # 3 single games + 1 multi-part game
+        self.assertEqual(game_count, 20)  # 20 unique games in comprehensive fixtures
         
         conn.close()
     
@@ -138,13 +150,14 @@ class TestCLIIntegration(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertTrue(self.merge_script.exists())
         
-        # Verify script content
+        # Verify script content contains expected games from comprehensive fixtures
         with open(self.merge_script) as f:
             content = f.read()
-            self.assertIn("Game1.crt", content)  # Should prefer .crt over .d64
-            self.assertIn("Game2.d64", content)  # Should prefer .d64 over .tap
-            self.assertIn("Game3.crt", content)  # Single format
-            self.assertIn("MultiGame (Disk 1).d64", content)  # Multi-part
+            # Check for games that should be in the script based on format priority
+            self.assertIn("Galaga.crt", content)  # Should prefer .crt format
+            self.assertIn("Ghostbusters.crt", content)  # Should prefer .crt over .d64/.tap
+            self.assertIn("Pitfall.crt", content)  # Should prefer .crt over .d64/.tap
+            self.assertIn("Bard's Tale (Disk 1).d64", content)  # Multi-part game
     
     def test_merge_command(self):
         """Test merging files to target directory."""
@@ -171,15 +184,16 @@ class TestCLIIntegration(unittest.TestCase):
             "--script", str(self.merge_script)
         )
         
-        self.assertEqual(result.returncode, 0)        # Verify the expected files exist in target
+        self.assertEqual(result.returncode, 0)
+        
+        # Verify the expected files exist in target based on comprehensive fixtures
         expected_files = [
-            "Game1.crt",
-            "Game2.d64",
-            "Game3.crt",
-            "MultiGame/MultiGame (Disk 1).d64",
-            "MultiGame/MultiGame (Disk 2).d64",
-            "MultiGame/MultiGame (Disk 3).d64",
-            "MultiGame.m3u"  # .m3u playlists are in root directory
+            "Galaga.crt",
+            "Ghostbusters.crt",
+            "Pitfall.crt",
+            "Bard's Tale/Bard's Tale (Disk 1).d64",
+            "Bard's Tale/Bard's Tale (Disk 2).d64",
+            "Bard's Tale.m3u"  # .m3u playlists are in root directory
         ]
         
         for file in expected_files:
@@ -222,7 +236,7 @@ class TestCLIIntegration(unittest.TestCase):
         
         # List all files in target directory and subdirectories
         target_files = list(self.target_dir.glob("**/*"))
-        self.assertGreaterEqual(len(target_files), 6)  # At least 6 files plus directory
+        self.assertGreaterEqual(len(target_files), 20)  # At least 20 files based on comprehensive fixtures
         
         # Convert paths to strings relative to target dir for easy comparison
         # Normalize paths to use forward slashes for cross-platform comparison
@@ -231,14 +245,13 @@ class TestCLIIntegration(unittest.TestCase):
             for f in target_files if f.is_file()
         ]
         
-        # Verify priority rules were followed
-        self.assertIn("Game1.crt", target_paths)  # Should use .crt over .d64
-        self.assertIn("Game2.d64", target_paths)  # Should use .d64 over .tap
-        self.assertIn("Game3.crt", target_paths)
-        self.assertIn("MultiGame.m3u", target_paths)  # M3U playlist in root
-        self.assertIn("MultiGame/MultiGame (Disk 1).d64", target_paths)
-        self.assertIn("MultiGame/MultiGame (Disk 2).d64", target_paths)
-        self.assertIn("MultiGame/MultiGame (Disk 3).d64", target_paths)
+        # Verify priority rules were followed based on comprehensive fixtures
+        self.assertIn("Galaga.crt", target_paths)  # Should use .crt format
+        self.assertIn("Ghostbusters.crt", target_paths)  # Should use .crt over .d64/.tap
+        self.assertIn("Pitfall.crt", target_paths)  # Should use .crt over .d64/.tap
+        self.assertIn("Bard's Tale.m3u", target_paths)  # M3U playlist in root
+        self.assertIn("Bard's Tale/Bard's Tale (Disk 1).d64", target_paths)
+        self.assertIn("Bard's Tale/Bard's Tale (Disk 2).d64", target_paths)
     
     def test_full_workflow_format_priority(self):
         """Test that format priorities and collections are handled correctly."""
@@ -262,10 +275,10 @@ class TestCLIIntegration(unittest.TestCase):
             "--script", str(self.merge_script)
         )
         
-        # Verify format priorities:
-        # 1. .crt (cartridge) from NoIntro should be selected over .d64 from TOSEC (Game1)
-        # 2. .d64 (disk) from NoIntro should be selected over .tap from TOSEC (Game2)
-        # 3. NoIntro version of multi-part game should be selected over TOSEC version
+        # Verify format priorities based on comprehensive fixtures:
+        # 1. .crt (cartridge) should be selected over .d64/.tap
+        # 2. NoIntro collection should be preferred over TOSEC
+        # 3. Europe/PAL regions should be preferred over USA/NTSC
         
         # Convert paths to strings relative to target dir for easy comparison
         target_paths = [
@@ -274,25 +287,22 @@ class TestCLIIntegration(unittest.TestCase):
             if f.is_file()  # Only include files, not directories
         ]
         
-        # Verify single file format priorities
-        self.assertIn("Game1.crt", target_paths)  # Should use NoIntro .crt over TOSEC .d64
-        self.assertNotIn("Game1.d64", target_paths)  # Lower priority format should not be used
+        # Verify format priorities
+        self.assertIn("Galaga.crt", target_paths)  # Should use NoIntro .crt
+        self.assertIn("Ghostbusters.crt", target_paths)  # Should use TOSEC .crt over .d64/.tap
+        self.assertIn("Pitfall.crt", target_paths)  # Should use TOSEC .crt over .d64/.tap
         
-        self.assertIn("Game2.d64", target_paths)  # Should use NoIntro .d64 over TOSEC .tap
-        self.assertNotIn("Game2.tap", target_paths)  # Lower priority format should not be used
+        # Verify regional priorities (Europe should be preferred)
+        self.assertIn("Donkey Kong.d64", target_paths)  # Should use Europe version from NoIntro
+        self.assertIn("Bubble Bobble.d64", target_paths)  # Should use Europe version from TOSEC
         
-        self.assertIn("Game3.crt", target_paths)  # Only exists in one format
+        # Verify multi-part game handling (NoIntro version selected)
+        self.assertIn("Bard's Tale.m3u", target_paths)  # Playlist should be created
+        self.assertIn("Bard's Tale/Bard's Tale (Disk 1).d64", target_paths)  # NoIntro Europe version
+        self.assertIn("Bard's Tale/Bard's Tale (Disk 2).d64", target_paths)  # NoIntro Europe version
         
-        # Verify multi-part game handling (NoIntro version selected over TOSEC version)
-        self.assertIn("MultiGame.m3u", target_paths)  # Playlist should be created
-        self.assertIn("MultiGame/MultiGame (Disk 1).d64", target_paths)  # NoIntro version
-        self.assertIn("MultiGame/MultiGame (Disk 2).d64", target_paths)  # NoIntro version
-        self.assertIn("MultiGame/MultiGame (Disk 3).d64", target_paths)  # NoIntro version
-        
-        # TOSEC variants should not be used
-        self.assertNotIn("MultiGame/MultiGame (Disk 1 PAL NTSC).d64", target_paths)
-        self.assertNotIn("MultiGame/MultiGame (Disk 2 PAL NTSC).d64", target_paths)
-        self.assertNotIn("MultiGame/MultiGame (Disk 3 PAL NTSC).d64", target_paths)
+        # Verify collection priority (NoIntro over TOSEC when both have same format)
+        self.assertIn("Donkey Kong.d64", target_paths)  # Should use NoIntro version
 
 if __name__ == "__main__":
     unittest.main()

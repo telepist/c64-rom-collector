@@ -2,7 +2,7 @@
 Core functionality for processing game files.
 """
 import os
-from utils.name_cleaner import clean_name
+from utils.name_cleaner import clean_name, extract_region, get_region_priority
 from utils.format_handler import get_format_priority, is_multi_part, get_multi_part_info
 from files import should_skip_file
 
@@ -26,6 +26,10 @@ def process_file(file_path, collection_name):
     if not clean_title:
         return None
     
+    # Extract region information
+    region = extract_region(original_name)
+    region_priority = get_region_priority(region)
+    
     format_priority = get_format_priority(original_name)
     is_multi = is_multi_part(file_path, original_name)
     part_num = get_multi_part_info(file_path, original_name) if is_multi else 0
@@ -37,6 +41,8 @@ def process_file(file_path, collection_name):
         'format': format_ext,
         'collection': collection_name,
         'format_priority': format_priority,
+        'region': region,
+        'region_priority': region_priority,
         'is_multi_part': 1 if is_multi else 0,
         'part_number': part_num
     }

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Union, Iterator
 from config import FORMAT_PRIORITIES, SKIP_PATTERNS
 
-def should_skip_file(path: str, filename: str) -> bool:
+def should_skip_file(path: Union[str, Path], filename: str) -> bool:
     """
     Determine if a file should be skipped during import.
     
@@ -17,8 +17,12 @@ def should_skip_file(path: str, filename: str) -> bool:
         
     Returns:
         True if file should be skipped, False otherwise
-    """    # Skip entries in Originals folder
-    if '/Originals/' in path or '\\Originals\\' in path:
+    """
+    # Convert to Path for safe operations
+    path_obj = Path(path)
+    
+    # Skip entries in Originals folder
+    if 'Originals' in path_obj.parts:
         return True
     
     # Skip system utilities and non-game content using configured patterns
@@ -118,6 +122,9 @@ def normalize_path_for_script(path: str, ensure_prefix: str = None) -> str:
     Returns:
         The normalized path
     """
+    if path is None:
+        raise TypeError("Path cannot be None")
+    
     normalized_path = path.replace('\\', '/')
     
     if ensure_prefix and not normalized_path.startswith(ensure_prefix):
@@ -168,35 +175,6 @@ def copy_file(src: Union[str, Path], dst: Union[str, Path]) -> None:
     src, dst = Path(src), Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
-
-
-def move_file(src: Union[str, Path], dst: Union[str, Path]) -> None:
-    """
-    Move a file from source to destination.
-    
-    Args:
-        src: Source file path
-        dst: Destination file path
-    """
-    src, dst = Path(src), Path(dst)
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(src), str(dst))
-
-
-def get_file_size(path: Union[str, Path]) -> int:
-    """
-    Get size of a file in bytes.
-    
-    Args:
-        path: Path to the file
-        
-    Returns:
-        Size of the file in bytes
-        
-    Raises:
-        FileNotFoundError: If the file does not exist
-    """
-    return Path(path).stat().st_size
 
 
 def is_file(path: Union[str, Path]) -> bool:

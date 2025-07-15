@@ -11,8 +11,6 @@ from .operations import (
     read_file,
     write_file,
     copy_file,
-    move_file,
-    get_file_size,
     is_file,
     is_dir
 )
@@ -24,7 +22,7 @@ from .path_sanitizer import (
 
 __all__ = [
     'should_skip_file',
-    'get_all_collections',
+    'get_all_collections', 
     'clean_directory',
     'ensure_directory_exists',
     'normalize_path_for_script',
@@ -33,8 +31,6 @@ __all__ = [
     'read_file',
     'write_file',
     'copy_file',
-    'move_file',
-    'get_file_size',
     'is_file',
     'is_dir'
 ]

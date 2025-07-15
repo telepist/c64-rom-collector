@@ -44,6 +44,8 @@ class TestMerger(unittest.TestCase):
             collection TEXT NOT NULL,
             format TEXT NOT NULL,
             format_priority INTEGER NOT NULL DEFAULT 0,
+            region TEXT DEFAULT '',
+            region_priority INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (game_id) REFERENCES games(id)
         )''')
         cursor.execute('''CREATE TABLE game_parts (
@@ -58,16 +60,16 @@ class TestMerger(unittest.TestCase):
         # Insert single part game in Collection1 (highest priority)
         cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Game1',))
         game1_id = cursor.lastrowid
-        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
-                         VALUES (?, ?, ?, ?)''', (game1_id, 'Collection1', 'crt', 3))
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority, region, region_priority) 
+                         VALUES (?, ?, ?, ?, ?, ?)''', (game1_id, 'Collection1', 'crt', 3, '', 0))
         version1_id = cursor.lastrowid
         cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
                          VALUES (?, ?, ?, ?)''', 
                          (version1_id, 0, 'src/Collection1/Game1.crt', 'Game1.crt'))
         
         # Insert same game in Collection2 (lower priority)
-        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
-                         VALUES (?, ?, ?, ?)''', (game1_id, 'Collection2', 'crt', 3))
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority, region, region_priority) 
+                         VALUES (?, ?, ?, ?, ?, ?)''', (game1_id, 'Collection2', 'crt', 3, '', 0))
         version2_id = cursor.lastrowid
         cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
                          VALUES (?, ?, ?, ?)''', 
@@ -76,8 +78,8 @@ class TestMerger(unittest.TestCase):
         # Insert single part game 2
         cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Game2',))
         game2_id = cursor.lastrowid
-        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
-                         VALUES (?, ?, ?, ?)''', (game2_id, 'Collection1', 'd64', 2))
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority, region, region_priority) 
+                         VALUES (?, ?, ?, ?, ?, ?)''', (game2_id, 'Collection1', 'd64', 2, '', 0))
         version3_id = cursor.lastrowid
         cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
                          VALUES (?, ?, ?, ?)''', 
@@ -86,8 +88,8 @@ class TestMerger(unittest.TestCase):
         # Insert multi part game 3
         cursor.execute('INSERT INTO games (clean_name) VALUES (?)', ('Game3',))
         game3_id = cursor.lastrowid
-        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority) 
-                         VALUES (?, ?, ?, ?)''', (game3_id, 'Collection1', 'tap', 1))
+        cursor.execute('''INSERT INTO game_versions (game_id, collection, format, format_priority, region, region_priority) 
+                         VALUES (?, ?, ?, ?, ?, ?)''', (game3_id, 'Collection1', 'tap', 1, '', 0))
         version4_id = cursor.lastrowid
         cursor.execute('''INSERT INTO game_parts (version_id, part_number, source_path, original_name) 
                          VALUES (?, ?, ?, ?)''', 

@@ -4,6 +4,64 @@ Utility functions for cleaning and normalizing game names.
 import os
 import re
 
+def extract_region(name):
+    """
+    Extract region information from a game name.
+    
+    Args:
+        name (str): The original game name
+        
+    Returns:
+        str: The region code (USA, Europe, World, Japan, etc.) or empty string if not found
+    """
+    # Skip region extraction for multi-part games to avoid false positives
+    if re.search(r'(Side|Part|Disk)\s*[0-9]+', name, re.IGNORECASE):
+        return ""
+    
+    # Look for common region patterns
+    region_match = re.search(r'\(([^)]*(?:USA|Europe|World|Japan|Eur|Jp|En|PAL|NTSC)[^)]*)\)', name, flags=re.IGNORECASE)
+    if region_match:
+        region_text = region_match.group(1).strip()
+        # Normalize common region names
+        region_text = re.sub(r'\bEur\b', 'Europe', region_text, flags=re.IGNORECASE)
+        region_text = re.sub(r'\bJp\b', 'Japan', region_text, flags=re.IGNORECASE)
+        region_text = re.sub(r'\bEn\b', 'English', region_text, flags=re.IGNORECASE)
+        return region_text
+    return ""
+
+
+def get_region_priority(region):
+    """
+    Get the priority value for a region.
+    
+    Args:
+        region (str): The region string
+        
+    Returns:
+        int: The priority value (higher is better)
+    """
+    # Define region priorities here to avoid circular imports
+    REGION_PRIORITIES = {
+        'Europe': 6,     # Europe releases (highest priority)
+        'PAL': 5,        # PAL-specific releases
+        'World': 4,      # World releases
+        'USA': 3,        # USA releases
+        'Japan': 2,      # Japan releases
+        'NTSC': 1,       # NTSC-specific releases
+        '': 0            # No region specified (lowest priority)
+    }
+    
+    # Check exact matches first
+    if region in REGION_PRIORITIES:
+        return REGION_PRIORITIES[region]
+    
+    # Check for partial matches (e.g., "USA, Europe" should match "USA")
+    for priority_region in sorted(REGION_PRIORITIES.keys(), key=lambda x: REGION_PRIORITIES[x], reverse=True):
+        if priority_region and priority_region in region:
+            return REGION_PRIORITIES[priority_region]
+    
+    return REGION_PRIORITIES.get('', 0)
+
 def clean_name(name):
     """
     Cleans and normalizes a game name by removing region markers, version info,

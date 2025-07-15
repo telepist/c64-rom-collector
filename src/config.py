@@ -29,6 +29,17 @@ FORMAT_PRIORITIES = {
     'prg': 1
 }
 
+# Region priorities (higher number = higher priority)
+REGION_PRIORITIES = {
+    'World': 5,      # World releases (highest priority)
+    'USA': 4,        # USA releases
+    'Europe': 3,     # Europe releases  
+    'Japan': 2,      # Japan releases
+    'PAL': 1,        # PAL-specific releases
+    'NTSC': 1,       # NTSC-specific releases
+    '': 0            # No region specified (lowest priority)
+}
+
 # Skip patterns for file processing
 SKIP_PATTERNS = [
     'BIOS',

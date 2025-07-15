@@ -58,6 +58,7 @@ class GameRepository:
     def get_best_versions(self):
         """
         Retrieve the best version of each game along with its parts.
+        Now includes region prioritization.
 
         Returns:
             list: A list of tuples containing game details and part information.
@@ -69,10 +70,12 @@ class GameRepository:
                     v.format,
                     v.format_priority,
                     v.collection,
+                    v.region,
+                    v.region_priority,
                     v.id as version_id,
                     ROW_NUMBER() OVER (
                         PARTITION BY g.id 
-                        ORDER BY v.format_priority DESC, v.collection ASC
+                        ORDER BY v.format_priority DESC, v.region_priority DESC, v.collection ASC
                     ) as rn
                 FROM games g
                 JOIN game_versions v ON g.id = v.game_id
